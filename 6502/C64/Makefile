@@ -9,7 +9,8 @@ vf_fth_files = $(wildcard src/vf-*.fth src/v4th*.fth)
 vf_fth_files_petscii = $(patsubst src/%, cbmfiles/%, $(vf_fth_files))
 vf_flavours = \
     v4thblk-c64 v4thblk-c16+ v4thblk-c16- \
-    v4th-c64 v4th-c16+ v4th-c16- v4th-x16 v4th-x16e
+    v4th-c64 v4th-c16+ v4th-c16- v4th-x16 v4th-x16e \
+    v4thblk-c65
 vf_binaries = $(patsubst %, cbmfiles/%, $(vf_flavours))
 
 all_src_files = $(wildcard src/*.fth)
@@ -116,6 +117,9 @@ $(vf_binaries): $(vf_fth_files_petscii) emulator/build-vf.sh \
 
 cbmfiles/v4thblk-c64:
 	emulator/build-vf.sh v4thblk-c64
+
+cbmfiles/v4thblk-c65:
+	emulator/build-vf.sh v4thblk-c65
 
 cbmfiles/v4thblk-c16+:
 	emulator/build-vf.sh v4thblk-c16+
