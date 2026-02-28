@@ -9,7 +9,7 @@
 256 | Constant 3.t
 
 | : (s#>s+t ( sector# -- sect track)
-(C65  28 /mod ; )
+(C65 dup 617 u> 4 and + 28 /mod ; )
 (C65 \ )   dup 1.t u< IF 15 /mod exit THEN
 (C65 \ ) 3 +  dup 2.t u< IF 1.t - 13 /mod 11 +
 (C65 \ )                            exit THEN
