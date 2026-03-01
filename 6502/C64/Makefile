@@ -5,6 +5,9 @@
 
 vf_blk_d64_files = $(wildcard disks/*.d64)
 vf_blk_fth_files = $(patsubst %.d64, %.fth, $(vf_blk_d64_files))
+vf_blk_fth_shadow_files = $(patsubst %.d64, %+shadow.fth, \
+	disks/vforth4_1.d64 disks/vforth4_3.d64 \
+	disks/vforth4_4.d64 disks/tc38q.d64)
 vf_fth_files = $(wildcard src/vf-*.fth src/v4th*.fth)
 vf_fth_files_petscii = $(patsubst src/%, cbmfiles/%, $(vf_fth_files))
 vf_flavours = \
@@ -28,7 +31,7 @@ release_zipfile = volksforth-6502-c64-release.zip
 # Target to convert all .d64 images into .fth files for easier reading,
 # and to update all PETSCII files in cbmfiles to the latest state of
 # the corresponding ASCII files in src.
-update: $(vf_blk_fth_files) $(vf_fth_files_petscii)
+update: $(vf_blk_fth_files) $(vf_blk_fth_shadow_files) $(vf_fth_files_petscii)
 
 
 clean:
@@ -314,19 +317,24 @@ cbmfiles/%.fr: tests/%.fr
 
 disks/%.fth: disks/%.d64
 	ufscr2file $< $@
+disks/%+shadow.fth: disks/%.d64
+	ufscr2file -s $< $@
 
 ## the first disk is special in that blocks &37- &84 and &122 - &169
 ## contain actual binary program files and not forth bocks.  So we
 ## special-case the .fth roule for disk 1 to blank out those sectors
 ## before generating the fth file
-disks/vforth4_1.fth: disks/vforth4_1bl.d64
-	ufscr2file vforth4_1bl.d64 $@
+disks/vforth4_1.fth: disks/vforth4_1bl.d64.tmp
+	ufscr2file $< $@
+disks/vforth4_1+shadow.fth: disks/vforth4_1bl.d64.tmp
+	ufscr2file -s $< $@
+
 
 ## this creates a copy of the first disk with the PRG file sectors
 ## replaced by blanks.
-disks/vforth4_1bl.d64: disks/vforth4_1.d64
+disks/vforth4_1bl.d64.tmp: disks/vforth4_1.d64
 	cp -v $< $@
-	while true; do echo -n "                "; done | ( \
-	    dd bs=1024 count=48 of=vforth4_1bl.d64 seek=37 conv=notrunc iflag=fullblock; \
-	    dd bs=256 count=$$((48*4)) of=vforth4_1bl.d64 seek=$$((4*122+3)) conv=notrunc iflag=fullblock) 
+	(while true; do echo -n "                "; done) | ( \
+	    dd bs=1024 count=48 of=$@ seek=37 conv=notrunc iflag=fullblock; \
+	    dd bs=256 count=$$((48*4)) of=$@ seek=$$((4*122+3)) conv=notrunc iflag=fullblock) 
 
