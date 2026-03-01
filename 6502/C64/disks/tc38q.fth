@@ -2493,13 +2493,13 @@ Target-Compiler volksFORTH 3.8 6502
 
 \ *** Block No. 89, Hexblock 59
 
-  a
+\ ..Manual                    clv06dec88
 
 
-                     volksforth 3.8TC  u3
- 2a    
-
-          t and Targetmachine
+2.6. load Sources of Forth Kernel
+     on a real machine, this takes
+     about 30 minutes!
+     - Host and Targetmachine
        the Sources are prepared for
        C16 & C64. Change the definitions
        of (C16 (C64 (see Screen and
