@@ -113,13 +113,13 @@ clv/re apr-oct87                          \    If an error occurs, reboot machin
 
 \ *** Block No. 4, Hexblock 4
 
-\ Relocating a system        clv2:jull87  \   a
+\ Relocating a system        clv2:jull87  \ \ ..Manual                    clv06dec88
 
 $9400         $0400
-( stacklength rstacklength -)             \                      volksforth 3.8TC  u3
- empty hex                                \  2a    
- over + origin +  origin 0A + ! \ r0
- origin +  dup    origin   1+ ! \ task    \           t and Targetmachine
+( stacklength rstacklength -)             \ 2.6. load Sources of Forth Kernel
+ empty hex                                \      on a real machine, this takes
+ over + origin +  origin 0A + ! \ r0      \      about 30 minutes!
+ origin +  dup    origin   1+ ! \ task    \      - Host and Targetmachine
              6 -  origin  8 + ! \ s0      \        the Sources are prepared for
  (16 $c000 ' limit >body ! C)             \        C16 & C64. Change the definitions
  cold                                     \        of (C16 (C64 (see Screen and
