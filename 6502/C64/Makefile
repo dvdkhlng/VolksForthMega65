@@ -314,3 +314,19 @@ cbmfiles/%.fr: tests/%.fr
 
 disks/%.fth: disks/%.d64
 	ufscr2file $< $@
+
+## the first disk is special in that blocks &37- &84 and &122 - &169
+## contain actual binary program files and not forth bocks.  So we
+## special-case the .fth roule for disk 1 to blank out those sectors
+## before generating the fth file
+disks/vforth4_1.fth: disks/vforth4_1bl.d64
+	ufscr2file vforth4_1bl.d64 $@
+
+## this creates a copy of the first disk with the PRG file sectors
+## replaced by blanks.
+disks/vforth4_1bl.d64: disks/vforth4_1.d64
+	cp -v $< $@
+	while true; do echo -n "                "; done | ( \
+	    dd bs=1024 count=48 of=vforth4_1bl.d64 seek=37 conv=notrunc iflag=fullblock; \
+	    dd bs=256 count=$$((48*4)) of=vforth4_1bl.d64 seek=$$((4*122+3)) conv=notrunc iflag=fullblock) 
+
