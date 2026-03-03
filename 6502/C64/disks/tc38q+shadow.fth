@@ -169,25 +169,25 @@ Onlyforth  Assembler also definitions
 
 \ *** Block No. 6, Hexblock 6
 
-( Forth-83 6502-Assembler              )  \ \\ ..Example Session          clv06dec88
+( Code generating primitives  27jun85we)  \ \\ ..Example Session          clv06dec88
 
-: end-code   context 2- @  context ! ;    \     insert Disk TCq
+Variable >codes                           \     insert Disk TCq
                                           \     4 load flush  \ relocate
-Create index                              \     -> volksFORTH83 ... ok
-0909 , 1505 , 0115 , 8011 ,
-8009 , 1D0D , 8019 , 8080 ,               \     insert Disk 3of4
-0080 , 1404 , 8014 , 8080 ,               \     19 load flush \ Editor
-8080 , 1C0C , 801C , 2C80 ,               \     -> blk 4 blk 5 ...... ok \ appr5 min
+| Create nrc ] c, , c@ here allot ! c! [  \     -> volksFORTH83 ... ok
 
-| Variable mode                           \     insert Disk 1of4
-                                          \     26 load flush \ savesystem
-: Mode:  ( n -)   Create c,
-  Does>  ( -)     c@ mode ! ;             \     insert Disk TCq
-                                          \     $10 load flush \ TC-resident Part
-0   Mode: .A        1    Mode: #
-2 | Mode: mem       3    Mode: ,X         \     insert Disk TCf
-4   Mode: ,Y        5    Mode: X)         \     savesystem @:vf-tc-3.8
-6   Mode: )Y       0F    Mode: )          \     -> ok  If Floppy flashes: Error
+: nonrelocate   nrc >codes ! ;            \     insert Disk 3of4
+                                          \     19 load flush \ Editor
+nonrelocate                               \     -> blk 4 blk 5 ...... ok \ appr5 min
+
+| : >exec Create c,                       \     insert Disk 1of4
+         Does> c@ >codes @ + @ execute ;  \     26 load flush \ savesystem
+
+|  0 >exec >c,       |  2 >exec >,        \     insert Disk TCq
+|  4 >exec >c@       |  6 >exec >here     \     $10 load flush \ TC-resident Part
+|  8 >exec >allot    | 0A >exec >!
+| 0C >exec >c!                            \     insert Disk TCf
+                                          \     savesystem @:vf-tc-3.8
+                                          \     -> ok  If Floppy flashes: Error
                                           \     \ @: is: overwrite if needed
                                           \     \ this file will later replace
                                           \     \ the running Forth System
@@ -197,45 +197,38 @@ Create index                              \     -> volksFORTH83 ... ok
 
 \ *** Block No. 7, Hexblock 7
 
-( Code generating primitives  27jun85we)  \ \\ ..Example Session          clv06dec88
+( Forth-83 6502-Assembler              )  \ \\ ..Example Session          clv06dec88
                                           \ 3.2. Compiling a new System
-Variable >codes                           \      first as for 3.1.
-                                          \      or:
-| Create nrc ] c, , c@ here allot ! c! [  \      LOAD "vf-tc-3.8",8
-                                          \      -> searching...loading..ready.
-: nonrelocate   nrc >codes ! ;
-                                          \      RUN
-nonrelocate                               \      -> volksFORTH83 ... ok
-
-| : >exec Create c,                       \      insert Disk TCq
-         Does> c@ >codes @ + @ execute ;  \      hex 27 30 thru flush
-                                          \         \ load transient Part of TC
-|  0 >exec >c,       |  2 >exec >,
-|  4 >exec >c@       |  6 >exec >here     \      insert Disk 2of4 (Forth Source)
-|  8 >exec >allot    | 0A >exec >!        \      $09 l \ edit Screen 9
-| 0C >exec >c!                            \              (c64 (c16 (c16+ (c16-
-                                          \              (comment in or out depend.
-                                          \              on Target-Maschine
-
-                                          \      $f load \ compile system
-                                          \      insert TCf or blank disk
-                                          \      savetarget c16ultraforth83
-                                          \  or  savetarget c64ultraforth83
-                                          \ - ENDE -
+: end-code   context 2- @  context ! ;    \      first as for 3.1.
+| Variable mode   | Variable opc          \      or:
+: Mode: ( n -) Create , Does> @ mode ! ;  \      LOAD "vf-tc-3.8",8
+   1  Mode: .A     202  Mode: #           \      -> searching...loading..ready.
+ 404 | Mode: mem   808  Mode: ,X
+1010  Mode: ,Y    2020  Mode: X)          \      RUN
+  40  Mode: )Y    4000  Mode: )           \      -> volksFORTH83 ... ok
+  80  Mode: )Z     100  Mode: sp)y
+                                          \      insert Disk TCq
+: m/c  ( tbl msk opc -- ) create c, , ,   \      hex 27 30 thru flush
+Does>  ( oparg addr -- )                  \         \ load transient Part of TC
+ dup c@ opc c!
+ mode @ 1 - IF  over ff00 and IF          \      insert Disk 2of4 (Forth Source)
+   mode @ ff00 and mode ! THEN            \      $09 l \ edit Screen 9
+ THEN  1+ dup @ mode @  and mode !        \              (c64 (c16 (c16+ (c16-
+ 2+ @ dup @ 4001 1 DO   ( arg adr msk)    \              (comment in or out depend.
+  dup I and IF  swap 1+ swap              \              on Target-Maschine
+   mode @  I and IF drop   ( arg adr )
+    1+ c@ opc c@ xor >c,  \ output opcode \      $f load \ compile system
+    I 1 - IF I ff00 and IF >, ELSE >c,    \      insert TCf or blank disk
+     THEN THEN  mem UNLOOP EXIT THEN      \      savetarget c16ultraforth83
+ THEN  I +LOOP                            \  or  savetarget c64ultraforth83
+ mem true Abort" invalid" ;               \ - ENDE -
 
 \ *** Block No. 8, Hexblock 8
 
-( upmode  cpu                          )
-
-| : upmode ( addr0 f0 - addr1 f1)
- IF mode @  8 or mode !   THEN
- 1 mode @  0F and ?dup IF
- 0 DO  dup +  LOOP THEN
- over 1+ @ and 0= ;
+( cpu                                  )
 
 : cpu  ( 8b -)   Create  c,
   Does>  ( -)    c@ >c, mem ;
-
  00 cpu brk  18 cpu clc  D8 cpu cld
  58 cpu cli  B8 cpu clv  CA cpu dex
  88 cpu dey  E8 cpu inx  C8 cpu iny
@@ -244,68 +237,75 @@ nonrelocate                               \      -> volksFORTH83 ... ok
  60 cpu rts  38 cpu sec  F8 cpu sed
  78 cpu sei  AA cpu tax  A8 cpu tay
  BA cpu tsx  8A cpu txa  9A cpu txs
- 98 cpu tya
+ 98 cpu tya  02 cpu see  03 cpu cle
+ 0b cpu tsy  1b cpu inz  2b cpu tys
+ 3b cpu dez  4b cpu taz  5b cpu tab
+ 6b cpu tza  7b cpu tba  db cpu phz
+ 5a cpu phy  7a cpu ply  da cpu phx
+ fa cpu plx  fb cpu plz  42 cpu neg
+ 5c cpu map
 
-
-
-
-
+: bbcpu  ( 8b -)   Create c,
+Does>  ( nn rr bit a --)
+ c@ swap  2* 2* 2* 2* or
+  >c,  swap >c,  >c, ;
+ 0f bbcpu bbr   8f bbcpu bbs
 
 \ *** Block No. 9, Hexblock 9
 
-( m/cpu                                )
-
-: m/cpu  ( mode opcode -)  Create c, ,
- Does>
- dup 1+ @ 80 and IF 10 mode +! THEN
- over FF00 and upmode upmode
- IF mem true Abort" invalid" THEN
- c@ mode @ index + c@ + >c, mode @ 7 and
- IF mode @  0F and 7 <
-  IF >c, ELSE >, THEN THEN mem ;
-
- 1C6E 60 m/cpu adc   1C6E 20 m/cpu and
- 1C6E C0 m/cpu cmp   1C6E 40 m/cpu eor
- 1C6E A0 m/cpu lda   1C6E 00 m/cpu ora
- 1C6E E0 m/cpu sbc   1C6C 80 m/cpu sta
- 0D0D 01 m/cpu asl   0C0C C1 m/cpu dec
- 0C0C E1 m/cpu inc   0D0D 41 m/cpu lsr
- 0D0D 21 m/cpu rol   0D0D 61 m/cpu ror
- 0414 81 m/cpu stx   0486 E0 m/cpu cpx
- 0486 C0 m/cpu cpy   1496 A2 m/cpu ldx
- 0C8E A0 m/cpu ldy   048C 80 m/cpu sty
- 0480 14 m/cpu jsr   8480 40 m/cpu jmp
- 0484 20 m/cpu bit
-
-
+( 65ce02 full opcode table    03mar26dk)
+>here 1def >,   20a >, 1606 >, 1202 >,
+111 >, 1e0e >, 1a >c,
+dup 1dec 83 m/c sta  dup c0d 00 m/c asl
+dup c0d 20 m/c rol  dup c0d 40 m/c lsr
+dup c0d 60 m/c ror      c0e a2 m/c ldy
+>here 1c1e >, 1410 >, 404 >, 1b1c >,
+c >c,               dup 1416 b2 m/c ldx
+dup 404 00 m/c trb  dup  406 d0 m/c cpy
+dup 406 f0 m/c cpx       c0c 90 m/c sty
+>here c0e dup >, 2489 >, 2c34 >, 3c >c,
+00 m/c bit
+>here 6e0d >, b4b3 >, 44a4 >, 4e4c >,
+6c7c >,
+dup   1 f1 m/c neg  dup   4 77 m/c dew
+dup 00d f0 m/c asr  dup 400 87 m/c asw
+dup 400 a7 m/c row  dup 600 b0 m/c phw
+dup 6400 00 m/c jmp     c0c d0 m/c stz
+>here 1def >, 9f9 >, 1505 >, 1101 >,
+4212 >, 1d0d >, 19 >c,
+dup 1cee 00 m/c ora  dup 1cee 20 m/c and
+dup 1cee 40 m/c eor  dup 1cee 60 m/c adc
+dup 1cee c0 m/c cmp  dup 1cee e0 m/c sbc
+dup 1dee a0 m/c lda  dup  c0d c3 m/c dec
+     c0d e3 m/c inc
 
 \ *** Block No. 10, Hexblock a
 
 ( Assembler conditionals               )
+\ ...rest of 65ce02 opcodes
+ >here c02 dup >, aba3 >, bb >c,
+00 m/c ldz
+>here 7416 >, 412 >, c14 >, f19 >, e >c,
+dup    2 70 m/c rtn  dup 004 e7 m/c inw
+dup 1414 82 m/c stx  dup 404 00 m/c tsb
+dup  406 d0 m/c cpz     6400 2c m/c jsr
+
 
 | : range?   ( branch -- branch )
  dup abs  07F u> Abort" out of range " ;
 
 : [[  ( BEGIN)  >here ;
-
 : ?]  ( UNTIL)  >c, >here 1+ -
                 range? >c, ;
-
 : ?[  ( IF)     >c,  >here 0 >c, ;
-
 : ?[[ ( WHILE)  ?[ swap ;
-
 : ]?  ( THEN)   >here over >c@
                 IF swap >!
  ELSE over 1+ - range? swap >c! THEN ;
-
 : ][  ( ELSE)   >here 1+   1 jmp
  swap >here over 1+ - range?  swap >c! ;
-
 : ]]  ( AGAIN)  jmp ;
-
 : ]]? ( REPEAT) jmp ]? ;
-
 
 \ *** Block No. 11, Hexblock b
 
