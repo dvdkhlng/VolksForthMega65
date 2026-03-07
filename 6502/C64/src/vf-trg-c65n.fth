@@ -1,9 +1,9 @@
 
 : )     ; immediate
 : (C    ; immediate
-: (C65  ; immediate
-: (C64  ; immediate
-: (C65n  [compile] ( ; immediate
+: (C65  ; immediate 
+: (C65n ; immediate
+: (C64  [compile] ( ; immediate
 : (C16  [compile] ( ; immediate
 : (C16+ [compile] ( ; immediate
 : (C16- [compile] ( ; immediate

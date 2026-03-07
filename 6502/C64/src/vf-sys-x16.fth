@@ -10,7 +10,7 @@ include vf-lbls-cbm.fth
 0feab >label ExtApi
 09f2c >label BrdCol
 \ I'm tentatively removing QtSw & Insrt from the X16 variant;
-\ see comment at the top of vf-sys-cbm.fth
+\ see comment at the top of vf-sys-iec.fth
 \ 0381 >label QtSw
 \ 0385 >label Insrt
 
@@ -59,9 +59,6 @@ Code basin  ( -- 8b)
 
 Input: keyboard   [ here input ! ]
  x16key x16key? x16decode x16expect ;
-
-
-include vf-sys-cbm.fth
 
 
 \ *** Block No. 143, Hexblock 8f

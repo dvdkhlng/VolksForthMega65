@@ -17,14 +17,16 @@ include vf-trg-c65.fth
 include vf-head-c65.fth
 include vf-cbm-core.fth
 include vf-sys-c64.fth
+include vf-sys-cbm.fth
+include vf-sys-iec.fth
 include vf-cbm-file.fth
 include vf-cbm-bufs.fth
 include vf-finalize.fth
 \ put buffers, rstack, into free memory
 \ area from $800-$2000
   2000 ' limit >body !  bb8 r0 !  be00 s0 !
-include vf-memsetup.fth
 
+include vf-memsetup.fth
 include vf-pr-target.fth
 .( target compile complete) cr
 \log logclose

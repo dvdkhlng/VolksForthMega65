@@ -8,22 +8,23 @@
 
 include vf-tc-prep.fth
 
-\log logopen" v4th-x16e.log"
+\log logopen" v4thblk-c65n.log"
 
-include vf-trg-x16.fth
+include vf-trg-c65n.fth
 
 \ The actual volksForth sources
 
-include vf-head-x16.fth
+include vf-head-c65n.fth
 include vf-cbm-core.fth
-include vf-sys-x16.fth
+include vf-sys-c65n.fth
 include vf-sys-cbm.fth
-include vf-sys-iec.fth
-include vf-cbm-file.fth
-include vf-cbm-dos.fth
-include vf-x16edit.fth
+\ todo
+\ include vf-cbm-file.fth
+\ include vf-cbm-bufs.fth
 include vf-finalize.fth
-  9f00 ' limit >body !  9b00 s0 !  9f00 r0 !
+\ put buffers, rstack, into free memory
+\ area from $1600-$2000
+  2000 ' limit >body !  19b8 r0 !  be00 s0 !
 include vf-memsetup.fth
 
 include vf-pr-target.fth

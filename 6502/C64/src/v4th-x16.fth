@@ -17,6 +17,8 @@ include vf-trg-x16.fth
 include vf-head-x16.fth
 include vf-cbm-core.fth
 include vf-sys-x16.fth
+include vf-sys-cbm.fth
+include vf-cbm-iec.fth
 include vf-cbm-file.fth
 include vf-finalize.fth
   9f00 ' limit >body !  9b00 s0 !  9f00 r0 !

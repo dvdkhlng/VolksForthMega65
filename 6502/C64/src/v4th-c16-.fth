@@ -17,6 +17,8 @@ include vf-trg-c16-.fth
 include vf-head-c16.fth
 include vf-cbm-core.fth
 include vf-sys-c16.fth
+include vf-sys-cbm.fth
+include vf-sys-iec.fth
 include vf-cbm-file.fth
 include vf-finalize.fth
   8000 ' limit >body !  7c00 s0 !  8000 r0 !

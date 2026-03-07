@@ -78,9 +78,6 @@ Input: keyboard   [ here input ! ]
  c64key c64key? c64decode c64expect ;
 
 
-include vf-sys-cbm.fth
-
-
 \ *** Block No. 143, Hexblock 8f
 \ ... continued
 8f fthpage

@@ -8,12 +8,12 @@ vf_blk_fth_files = $(patsubst %.d64, %.fth, $(vf_blk_d64_files))
 vf_blk_fth_shadow_files = $(patsubst %.d64, %+shadow.fth, \
 	disks/vforth4_1.d64 disks/vforth4_3.d64 \
 	disks/vforth4_4.d64 disks/tc38q.d64)
-vf_fth_files = $(wildcard src/vf-*.fth src/v4th*.fth)
+vf_fth_files = $(wildcard src/vf-*.fth src/v4th*.fth src/cbmopen.fth)
 vf_fth_files_petscii = $(patsubst src/%, cbmfiles/%, $(vf_fth_files))
 vf_flavours = \
     v4thblk-c64 v4thblk-c16+ v4thblk-c16- \
     v4th-c64 v4th-c16+ v4th-c16- v4th-x16 v4th-x16e \
-    v4thblk-c65
+    v4thblk-c65 v4th-c65n v4thblk-c65n
 vf_binaries = $(patsubst %, cbmfiles/%, $(vf_flavours))
 
 all_src_files = $(wildcard src/*.fth)
@@ -123,6 +123,12 @@ cbmfiles/v4thblk-c64:
 
 cbmfiles/v4thblk-c65:
 	emulator/build-vf.sh v4thblk-c65
+
+cbmfiles/v4thblk-c65n:
+	emulator/build-vf.sh v4thblk-c65n
+
+cbmfiles/v4th-c65n:
+	emulator/build-vf.sh v4th-c65n
 
 cbmfiles/v4thblk-c16+:
 	emulator/build-vf.sh v4thblk-c16+

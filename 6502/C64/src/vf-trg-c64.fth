@@ -4,6 +4,7 @@
 
 : (C64  ; immediate
 : (C65  [compile] ( ; immediate
+: (C65n [compile] ( ; immediate
 : (C16  [compile] ( ; immediate
 : (C16+ [compile] ( ; immediate
 : (C16- [compile] ( ; immediate

@@ -17,6 +17,8 @@ include vf-trg-c64.fth
 include vf-head-c64.fth
 include vf-cbm-core.fth
 include vf-sys-c64.fth
+include vf-sys-cbm.fth
+include vf-sys-iec.fth
 include vf-cbm-file.fth
 include vf-finalize.fth
   c000 ' limit >body !  bc00 s0 !  c000 r0 !

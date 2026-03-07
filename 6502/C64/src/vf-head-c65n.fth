@@ -1,6 +1,8 @@
-\ The head of C65 VolkForth
-\ This runs mostly the C64 VolksForth using
-\ C65's C64 emulation ROM.
+\ The head of C65-native VolkForth
+\ This runs VolksForth natively on the Mega65 ROM
+\ See vf-head-c65.fth for a version that maps the C64 ROM
+\ instead for less features but better compatibiltiy.
+
 Onlyforth
 
 2001 dup  displace !
@@ -28,18 +30,11 @@ $100 allot
 
 \ savesystem assumes that origin is at displace@+0x17.
 \ so injecting the  C65 init here: Configure memory map
-\ and ROM to mostly resemble a C64
+\ and ROM...
 Label c65init  c65init >c65init !
  \ disable cpu-based memory mapping
- sei  36 # lda   1 sta \ ROM on
- 0 # lda   tax  tay  taz   map nop ( eom)
- 41 # lda   0 sta  \ 40 MHz cpu
- \ enable VIC IV registers
- \ 47 # lda  D02f sta   53 # lda  D02f sta
- 20 # lda  D031 sta \ disable H640 mode
-\ continue with init in vf-cbm-core.fs
  0 jmp  here 2- >label >cold
 end-code 
  
 Create logo
-  ," volksFORTH-83 3.9.6-C65  "
+  ," volksFORTH-83 3.9.6-C65n  "

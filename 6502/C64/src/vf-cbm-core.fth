@@ -6,6 +6,7 @@
 ( Zero page Variables & Next  03apr85bp)
 
 (C64  02  )
+(C65n  0A  )  \ oh no, not officially allowed
 (C16  02  )
 (X16  $50 )
    dup     >label RP     2+
@@ -2156,8 +2157,10 @@ Defer .status    ' noop Is .status
 ( quit (quit abort            07jun85bp)
 
 | : prompt
- state @  IF ."  compiling"  exit  THEN
- ."  ok" ;
+ state @  IF
+  (C65n 81 con! ) ."  compiling"
+  (C65n 5 con! ) exit  THEN
+ (C65n 99 con! ) ."  ok"  (C65n 5 con! ) ;
 
 : (quit
  BEGIN .status cr query interpret prompt
@@ -2187,7 +2190,8 @@ Defer 'abort   ' noop Is 'abort
 Variable scr 1 scr !  Variable r# 0 r# !
 
 : (error  ( string -- )
- standardi/o space here .name count type
+ standardi/o space here (C65n 9f con! )
+ .name  (C65n 1C con! ) count type (C65n 5  con! )
  space ?cr  blk @  ?dup
  IF  scr !  >in @  r# !  THEN quit ;
 
@@ -2611,8 +2615,8 @@ Defer 'cold    ' noop Is 'cold
 
 | : (cold
  init-vocabularys  init-buffers
- Onlyforth 'cold
- page logo count type cr
+ Onlyforth 'cold  (C65n 9c con! )
+ page logo count type cr (C65n 5 con! )
  (restart ;
 
 Defer 'restart  ' noop Is 'restart
