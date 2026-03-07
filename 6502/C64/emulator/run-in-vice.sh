@@ -23,7 +23,7 @@ then
   # keybuf="${2}"
   # The following could also just be a cp.
   ascii2petscii "${emulatordir}/notdone" "${basedir}/cbmfiles/notdone"
-  warp="-warp"
+  warp="-warp +sound"
   # Magic env variable KEEPEMU: Only if not set, send in the final CR.
   if [ -z "${KEEPEMU}" ]; then
     keybuf="${keybuf}\n"
