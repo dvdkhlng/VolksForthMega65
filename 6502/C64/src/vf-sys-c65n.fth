@@ -17,7 +17,7 @@ CHROUT >label ConOut
 0d020 >label BrdCol
 0d021 >label BkgCol
 
-\ from 65site.de, not a Mega65 API
+\ From 65site.de, not official Mega65 APIs
 00E0 >label pnt
 00EC >label pntr
 00F4 >label QtSw

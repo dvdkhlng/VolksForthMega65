@@ -1,3 +1,7 @@
+\ This implements disk access using OPEN, SETNAM, SETLFS and friends
+\ It is likely slower than using IEC bus access, however, on C65 the
+\ floppy is no ton the IEC bus and can only be accessed using the
+\ higher level file descriptor based APIs.
 
 \ *** Block No. 140, Hexblock 8c
 8c fthpage
@@ -20,10 +24,14 @@
 | : s#>t+s  ( sector# -- track sect )
  (s#>s+t  1+ swap ;
 
-| : x,x ( track sect -- adr count)
- base push  decimal
- 0 <# #s drop Ascii , hold #s #> ;
-
+: (sectcmd)  ( sect track -- ud )
+   base push  decimal
+   0 <# #s drop bl hold #s bl hold
+   ascii 0 hold bl hold 2drop 0d 0 #s  bl hold ;
+: rdcmd ( sect track -- adr count)
+   (sectcmd) ascii 1 hold   ascii u hold #> ;
+: wrcmd ( sect track -- adr count)
+   (sectcmd) ascii 2 hold   ascii u hold #> ;
 
 \ *** Block No. 141, Hexblock 8d
 8d fthpage
@@ -32,21 +40,35 @@
 
 100 | Constant b/sek
 
+: derror?  ( -- flag )
+   f cbmchkin cbmbasin Ascii 0 =
+   IF drop BEGIN cbmbasin D = UNTIL false
+   ELSE BEGIN emit cbmbasin dup D = UNTIL emit true THEN ;
+
 : readsector  ( adr tra# sect# -- flag)
- disk 0F busout
- " u1:13,0," count   bustype
- x,x bustype busoff pause
- derror? ?exit
- disk 0D busin b/sek businput busoff
- false ;
+   d disk d " #" count cbmopen
+   f disk 2swap f -rot rdcmd cbmopen
+   getio drop  derror?
+   d cbmchkin
+   swap b/sek bounds do cbmbasin I c! loop
+   cbmchkin
+   f cbmclose 
+   d cbmclose
+   false ;
 
 : writesector  ( adr tra# sect# -- flag)
- rot disk 0F busout
- " b-p:13,0" count bustype busoff
- disk 0D busout b/sek bustype busoff
- disk 0F busout
- " u2:13,0," count  bustype
- x,x bustype busoff pause  derror? ;
+   d disk d " #" count cbmopen
+   f disk f " b-p 13 0" cbmopen
+   derror? dup ?exit drop
+   getio nip >r d cbmchkout
+   rot b/sek bounds do I c@ cbmbasout loop
+   f cbmchkout
+   wrcmd do I c@ cbmbasout loop
+   r> cbmchkout
+   cbmclrchn
+   f cbmclose 
+   d cbmclose
+   false ;   
 
 
 \ *** Block No. 142, Hexblock 8e
@@ -54,24 +76,24 @@
 
 ( 1541r/w                     28may85re)
 
-: diskopen  ( -- flag)
- disk 0D busopen  Ascii # bus! busoff
- derror? ;
-
-: diskclose ( -- )
- disk 0D busclose  busoff ;
+\ : diskopen  ( -- flag)
+ \ disk 0D busopen  Ascii # bus! busoff
+ \ derror? ;
+\ 
+\ : diskclose ( -- )
+ \ disk 0D busclose  busoff ;
 
 : 1541r/w  ( adr blk file r/wf -- flag)
  swap Abort" no file"
  -rot  blk/drv /mod  dup (drv ! 3 u>
  IF . ." beyond capacity" nip exit  THEN
- diskopen  IF  drop nip exit  THEN
+ \ diskopen  IF  drop nip exit  THEN
  0 swap   2* 2* 4 bounds
  DO  drop  2dup I rot
      IF    s#>t+s readsector
      ELSE  s#>t+s writesector THEN
      >r b/sek + r> dup  IF  LEAVE  THEN
- LOOP   -rot  2drop  diskclose  ;
+ LOOP   -rot  2drop  ( diskclose)  ;
 
 ' 1541r/w  Is   r/w
 
@@ -87,9 +109,9 @@
    stop?  IF LEAVE THEN  LOOP ;
 
 : findex ( from to --)
- diskopen  IF  2drop  exit  THEN
+ \ diskopen  IF  2drop  exit  THEN
  1+ swap DO  cr  I 3 .r
    pad dup I 2* 2* s#>t+s readsector
    >r 28 type
    r> stop? or IF LEAVE THEN
- LOOP  diskclose  ;
+ LOOP  ( diskclose)  ;

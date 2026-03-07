@@ -2,6 +2,9 @@
 \ include vf-lbls-cbm.fth
 100 fthpage
 
+\ Todo: all of these need error processing similar to teh
+\ "no device" errors produced in the IEC code.
+
 Code cbmopen  ( lfn ga sa fname fnlen -- )
   (C65n txa SETBNK jsr ( )
    5 # lda  Setup jsr
@@ -27,3 +30,11 @@ Code cbmbasout  ( chr -- )
 
 Code cbmbasin  ( -- chr )
   CHRIN jsr  Push0A jmp  end-code
+
+Code getio  ( -- in out)
+ SP 2dec txa  SP )Y sta
+   (C65n GETIO jsr )
+   (C65n \ ) 3 # ldy  \ in=keyb out=screen
+ txa phy  0 # ldx  SP X) sta
+ pla Push0A jmp  end-code
+

@@ -18,9 +18,11 @@ include vf-head-c65n.fth
 include vf-cbm-core.fth
 include vf-sys-c65n.fth
 include vf-sys-cbm.fth
+include cbmopen.fth
+include vf-sys-cbmrwslow.fth
 \ todo
 \ include vf-cbm-file.fth
-\ include vf-cbm-bufs.fth
+include vf-cbm-bufs.fth
 include vf-finalize.fth
 \ put buffers, rstack, into free memory
 \ area from $1600-$2000
