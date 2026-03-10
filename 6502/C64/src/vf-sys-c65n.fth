@@ -136,9 +136,11 @@ ink-pot 1+ lda BkgCol sta \ backgrnd
 \ research proper VIC init for C65
   \ 0 # lda  $D01A sta  \ VIC-IRQ off
 \ $1B # lda  $D011 sta  \ Textmode on
- 02 # lda  d06a sta  \  CBM font, shifted
- d8 # lda  d069 sta  
- 00 # lda  d068 sta
+\ beware of the "hot registers"  semantic!
+ \ 02 # lda  d06a sta  \  CBM font, shifted
+ \ d8 # lda  d069 sta  
+\ 00 # lda  d068 sta
+$27 # lda  $D018 sta  \ low/upp +
  cli rts end-code
 first-init dup bootsystem 1+ !
                warmboot   1+ !
