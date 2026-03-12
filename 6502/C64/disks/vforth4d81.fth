@@ -648,31 +648,31 @@ free                 2
                                          
                                          
                                          
-\ savesystem                   23oct87re 
+\ savesystem         23oct87re 03mar26dk 
                                          
 | : (savsys ( adr len -- )               
  [ Assembler ] Next  [ Forth ]           
  ['] pause  dup push  !  \ singletask    
- i/o push  i/o off  bustype ;            
+ ( i/o push  i/o off)  14 cbmtype ;      
                                          
 : savesystem   \ name must follow        
     \ prepare Forth Kernal               
  scr push  1 scr !  r# push  r# off      
     \ prepare Editor                     
- [ Editor ]                              
- stamp$ dup push off                     
- (pad   dup push off                     
+\ [ Editor ]                             
+ \ stamp$ dup push off                   
+ \ (pad   dup push off                   
     \ now we save the system             
  save                                    
- 8 2 busopen  0 parse bustype            
- " ,p,w" count bustype  busoff           
- 8 2 busout  origin $17 -                
- dup  $100 u/mod  swap bus! bus!         
- here over - (savsys  busoff             
- 8 2 busclose                            
- 0 (drv ! derror? abort" save-error" ;   
+ 0 parse dup >r pad swap move            
+ " ,p,w" count pad r@ + swap move        
+ 14 8 14  pad r> 4 + cbmopen             
+ origin $17 - dup sp@ 2 14 cbmtype       
+ here over - (savsys  14 cbmclose        
+ 0 (drv ! false abort" save-error" ;     
                                          
 Onlyforth                                
+                                         
 \ bamallocate, formatdisk      20oct87re 
                                          
 : bamallocate ( --)                      
@@ -10388,10 +10388,10 @@ Code unlink  ( -- )
   $D3 ldy  $D6 ldx  clc  plot jsr C)     
                                          
 (16 : unlink  0 0  $7EE 2! ; C)          
+(65n : unlink ; C)                       
                                          
 Label setptrs                            
  0 # ldx  1 # ldy  Next jmp  end-code    
-                                         
                                          
                                          
                                          
@@ -10511,18 +10511,18 @@ $28 | Constant #col $19 | Constant #row
 | 2variable chars   | 2variable lines    
 | 2variable fbuf    | 2variable rbuf     
                                          
-(64 $288 C)  (16 $53e C)  >Label scradr  
-(64 $d800 C) (16 $800 C)  >Label coladr  
+(64 $288 C)  (16 $53e C) (65n $d061 C)   
+>Label scradr                            
+$d800 (16 drop $800 C) >Label coladr     
                                          
-$d1  (16 drop $c8 C) | Constant linptr   
-$d3  (16 drop $ca C) | Constant curofs   
-                                         
-(64 $D020 C) (16 $ff19 C)                
- | Constant border                       
-(64 $286  C) (16 $53b C) | Constant pen  
-(64 $d021 C) (16 $ff15 C)                
- | Constant bkgrnd                       
-                                         
+$d1  (16 drop $c8 C) (65n drop $e0 C)    
+$d3  (16 drop $ca C) (65n drop $ec C)    
+| Constant curofs  | Constant linptr     
+$D020 (16 drop $ff19 C)                  
+(64 $286  C) (16 $53b C) (65n $f1 C)     
+| Constant pen | Constant border         
+$d021 (16 drop $ff15 C)                  
+| Constant bkgrnd                        
 \ Edi special cmoves          cas16aug06 
 ( thanks to commodore....          )     
                                          
@@ -10928,11 +10928,11 @@ Editor definitions
  [compile] Ascii $40 - ; immediate       
 | Create keytable                        
 Ctrl n c, Ctrl b c, Ctrl w c, Ctrl a c,  
-$1F c, (64 Ctrl ^ C)      (16 $92 C) c,  
+$1F c, Ctrl ^       (16 drop $92 C) c,   
 $0D c,   $8D c,                          
 Ctrl c c, Ctrl x c, Ctrl f c, Ctrl l c,  
 $85 c,   $89 c,    $86 c,    $8A c,      
-$9F c,   $1C c, (64 00 C) (16 $1e C) c,  
+$9F c,   $1C c,   00 (16 drop $1e C) c,  
 $8B c,   $87 c,    $88 c,    $8C c,      
 $1D c,   $11 c,    $9D c,    $91 c,      
 $13 c,   $93 c,    $94 c,                
@@ -11112,17 +11112,17 @@ Forth definitions
  IF  l  ELSE  ." from keyboard"  THEN ;  
                                          
 Editor definitions                       
-                                         
+\ todo: redundant with curadr above      
 (16 | : curaddr \ --Addr                 
      linptr @ curofs c@ + ; C)           
                                          
 : curlin  ( --curAddr linLen) \ & EOLn   
 (64 linptr @ $D5 c@ -trailing            
-     dup $d3 c! C)                       
+   dup $d3 c! C)                         
+(65n linptr @ $EC c@ -trailing C)        
 (16 $1b con! ascii j con! curaddr        
     $1b con! ascii k con! $1d con!       
      curaddr  over - C) ;                
-                                         
 \ Edidecode                  ccas16aug06 
                                          
 : edidecode  ( adr cnt1 key -- adr cnt2) 
