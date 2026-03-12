@@ -4,7 +4,7 @@
 # https://github.com/pzembrod/cc64 to be installed.
 
 vf_blk_d64_files = $(wildcard disks/*.d64)
-vf_blk_fth_files = $(patsubst %.d64, %.fth, $(vf_blk_d64_files))
+vf_blk_fth_files = $(patsubst %.d64, %.fth, $(vf_blk_d64_files)) disks/vforth4d81.fth
 vf_blk_fth_shadow_files = $(patsubst %.d64, %+shadow.fth, \
 	disks/vforth4_1.d64 disks/vforth4_3.d64 \
 	disks/vforth4_4.d64 disks/tc38q.d64)
@@ -334,7 +334,12 @@ disks/vforth4_1.fth: disks/vforth4_1bl.d64.tmp
 	ufscr2file $< $@
 disks/vforth4_1+shadow.fth: disks/vforth4_1bl.d64.tmp
 	ufscr2file -s $< $@
-
+disks/vforth4d81.fth: disks/vforth4bl.d81
+	(dd bs=256 count=$$((39*40)) iflag=fullblock; \
+	dd bs=256 count=4 iflag=fullblock of=/dev/null;  \
+	dd bs=256 count=$$((3200-4-39*40)) iflag=fullblock) < $< | \
+	petscii2ascii - | LC_ALL=C sed 's/.\{1024\}/& /g' | \
+	LC_ALL=C sed -e 's/.\{41\}/&\n/g' > $@
 
 ## this creates a copy of the first disk with the PRG file sectors
 ## replaced by blanks.
@@ -343,4 +348,14 @@ disks/vforth4_1bl.d64.tmp: disks/vforth4_1.d64
 	(while true; do echo -n "                "; done) | ( \
 	    dd bs=1024 count=48 of=$@ seek=37 conv=notrunc iflag=fullblock; \
 	    dd bs=256 count=$$((48*4)) of=$@ seek=$$((4*122+3)) conv=notrunc iflag=fullblock) 
+
+disks/vforth4bl.d81.tmp: disks/vforth4.d81
+	cp -v $< $@
+	(while true; do echo -n "                "; done) | ( \
+	    dd bs=1024 count=30 of=$@ seek=170 conv=notrunc iflag=fullblock; \
+	    dd bs=1024 count=20 of=$@ seek=370 conv=notrunc iflag=fullblock; \
+	    dd bs=1024 count=10 of=$@ seek=391 conv=notrunc iflag=fullblock; \
+	    dd bs=1024 count=30 of=$@ seek=571 conv=notrunc iflag=fullblock; \
+	    dd bs=1024 count=1 of=$@ seek=766 conv=notrunc iflag=fullblock; \
+	    dd bs=1024 count=29 of=$@ seek=771 conv=notrunc iflag=fullblock)
 
