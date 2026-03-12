@@ -31,10 +31,18 @@ Code cbmbasout  ( chr -- )
 Code cbmbasin  ( -- chr )
   CHRIN jsr  Push0A jmp  end-code
 
-Code getio  ( -- in out)
+Code cbmgetio  ( -- in out)
  SP 2dec txa  SP )Y sta
    (C65n GETIO jsr )
    (C65n \ ) 3 # ldy  \ in=keyb out=screen
  txa phy  0 # ldx  SP X) sta
  pla Push0A jmp  end-code
 
+: cbmtype ( adr n lfn --)
+   cbmgetio nip >r  cbmchkout
+   bounds  ?DO  I c@ cbmbasout  LOOP pause
+   r> cbmchkout ;
+: cbminput ( adr n lfn -- )
+   cbmgetio drop >r  cbmchkin
+   bounds  ?DO  cbmbasin I c!   LOOP pause
+   r> cbmchkin ;

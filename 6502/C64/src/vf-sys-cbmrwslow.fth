@@ -28,9 +28,9 @@
    base push  decimal
    0 <# #s drop bl hold #s bl hold
    ascii 0 hold bl hold 2drop 0d 0 #s  bl hold ;
-: rdcmd ( sect track -- adr count)
+: rdcmd ( track sect -- adr count)
    (sectcmd) ascii 1 hold   ascii u hold #> ;
-: wrcmd ( sect track -- adr count)
+: wrcmd ( track sect -- adr count)
    (sectcmd) ascii 2 hold   ascii u hold #> ;
 
 \ *** Block No. 141, Hexblock 8d
@@ -41,17 +41,17 @@
 100 | Constant b/sek
 
 : derror?  ( -- flag )
-   f cbmchkin cbmbasin Ascii 0 =
+   cbmgetio drop
+   f cbmchkin cbmbasin dup Ascii 0 =
    IF drop BEGIN cbmbasin D = UNTIL false
-   ELSE BEGIN emit cbmbasin dup D = UNTIL emit true THEN ;
+   ELSE BEGIN emit cbmbasin dup D = UNTIL emit true THEN
+   swap cbmchkin ;
 
 : readsector  ( adr tra# sect# -- flag)
    d disk d " #" count cbmopen
    f disk 2swap f -rot rdcmd cbmopen
-   getio drop  derror?
-   d cbmchkin
-   swap b/sek bounds do cbmbasin I c! loop
-   cbmchkin
+   derror? dup ?exit drop
+   b/sek d cbminput
    f cbmclose 
    d cbmclose
    false ;
@@ -60,11 +60,8 @@
    d disk d " #" count cbmopen
    f disk f " b-p 13 0" cbmopen
    derror? dup ?exit drop
-   getio nip >r d cbmchkout
-   rot b/sek bounds do I c@ cbmbasout loop
-   f cbmchkout
-   wrcmd do I c@ cbmbasout loop
-   r> cbmchkout
+   rot b/sek d cbmtype
+   wrcmd f cbmtype
    cbmclrchn
    f cbmclose 
    d cbmclose
