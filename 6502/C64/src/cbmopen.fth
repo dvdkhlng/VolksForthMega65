@@ -5,7 +5,7 @@
 \ Todo: all of these need error processing similar to teh
 \ "no device" errors produced in the IEC code.
 
-Code cbmopen  ( lfn ga sa fname fnlen -- )
+Code cbmopen  ( lfn ga sa fname fnlen -- status )
   (C65n txa SETBNK jsr ( )
    5 # lda  Setup jsr
    N 8 + lda  N 6 + ldx  N 4 + ldy  SETLFS jsr
@@ -38,11 +38,17 @@ Code cbmgetio  ( -- in out)
  txa phy  0 # ldx  SP X) sta
  pla Push0A jmp  end-code
 
-: cbmtype ( adr n lfn --)
+: cbmtype ( adr n lfn -- flag )
    cbmgetio nip >r  cbmchkout
-   bounds  ?DO  I c@ cbmbasout  LOOP pause
+   0 -rot  bounds  ?DO
+      I c@ cbmbasout
+      i/o-status? ?dup IF nip LEAVE THEN
+   LOOP pause
    r> cbmchkout ;
-: cbminput ( adr n lfn -- )
+: cbminput ( adr n lfn -- flag )
    cbmgetio drop >r  cbmchkin
-   bounds  ?DO  cbmbasin I c!   LOOP pause
+   0 -rot  bounds  ?DO
+      cbmbasin I c!
+      i/o-status? ?dup IF nip LEAVE THEN
+   LOOP pause
    r> cbmchkin ;

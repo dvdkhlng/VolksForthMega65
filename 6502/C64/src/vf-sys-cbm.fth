@@ -85,7 +85,7 @@ Code i/o-status?  ( -- n )
 
 400 Constant b/blk
 
-0AA (C65 drop 320 ) Constant blk/drv
+0AA (C65 drop 31F ) Constant blk/drv
 
 Variable (drv    0 (drv !
 
