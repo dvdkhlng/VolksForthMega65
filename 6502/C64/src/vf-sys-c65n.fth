@@ -12,14 +12,13 @@ FF41 >label GETIO
 FF6B >label SETBNK
 CHROUT >label ConOut
 
-\ VIC labels
-
 0d020 >label BrdCol
 0d021 >label BkgCol
+0d800 | Constant coladr
 
 \ From 65site.de, not official Mega65 APIs
-00E0 >label pnt
-00EC >label pntr
+00E0 | Constant pnt
+00EC | Constant pntr
 00F4 >label QtSw
 00F5 >label Insrt
 11FF >label blnon 
@@ -65,17 +64,21 @@ end-code
 \   xyNext jmp
 \ end-code
 
-Code curon   ( --)
-   \ pntr ldy  pnt )Y lda  gdbln sta
-   blnsw stx
- xyNext jmp   end-code
+\ Code curon   ( --)
+\    \ pntr ldy  pnt )Y lda  gdbln sta
+\    blnsw stx
+\  xyNext jmp   end-code
 
-Code curoff   ( --)
-   \ this produces screen artifacts on backspace.
-   iny  blnsw sty ( blnct sty  blnon stx)
- \ gdbln lda  pntr ldy  pnt )Y sta
- 1 # ldy  Next jmp   end-code
+\ Code curoff   ( --)
+\    \ this produces screen artifacts on backspace.
+\    iny  blnsw sty ( blnct sty  blnon stx)
+\  \ gdbln lda  pntr ldy  pnt )Y sta
+\  1 # ldy  Next jmp   end-code
 
+: colpnt  d030 dup c@ 1 or swap c!  coladr pnt @ + pntr c@ + ;
+: curon  colpnt dup c@ 90 or swap c! ;
+: curoff  colpnt dup c@ 6F and swap c! ;
+ 
 : c64key  ( -- 8b)
  curon BEGIN pause getkey ?DUP UNTIL
  curoff ;
@@ -140,7 +143,9 @@ ink-pot 1+ lda BkgCol sta \ backgrnd
  \ 02 # lda  d06a sta  \  CBM font, shifted
  \ d8 # lda  d069 sta  
 \ 00 # lda  d068 sta
-$27 # lda  $D018 sta  \ low/upp +
+27 # lda  D018 sta  \ low/upp +
+\ no: is disabled by any DOS operation.
+\ D030 lda  1 # ora  D030 sta    \ enable CRAM2k
  cli rts end-code
 first-init dup bootsystem 1+ !
                warmboot   1+ !

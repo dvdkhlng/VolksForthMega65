@@ -26,6 +26,8 @@ include vf-cbm-bufs.fth
 include vf-finalize.fth
 \ put buffers, rstack, into free memory
 \ area from $1600-$2000
+\ ROMC is set by default, disabling it breaks
+\ floppy read: $2000 holds the DOS
   2000 ' limit >body !  19b8 r0 !  be00 s0 !
 include vf-memsetup.fth
 
