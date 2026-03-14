@@ -108,6 +108,9 @@ end-code
 Input: keyboard   [ here input ! ]
  c64key c64key? c64decode c64expect ;
 
+: 40col  ( -- )  1b con!  ascii 4 con! ;
+: 80col  ( -- )  1b con!  ascii 8 con! ;
+   
 \ *** Block No. 143, Hexblock 8f
 \ ... continued
 8f fthpage
