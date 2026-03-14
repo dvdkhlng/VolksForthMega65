@@ -11079,7 +11079,7 @@ Editor definitions
  dup c@ border c! dup 1+ c@ bkgrnd c!    
   2+ c@ pen c! ;                         
 | : (edit  ( -- n)                       
- 4 setcol $93 con!                       
+ 4 setcol $93 con!  (65n 40col C)        
  elist drop  scroll off                  
  BEGIN key dup char c!                   
    0 findkey execute ?blink ?dup UNTIL   
