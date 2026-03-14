@@ -10606,20 +10606,20 @@ Label incpointer
                                          
 | Code rowadr  ( -- adr)                 
  curofs lda  #col # cmp  txa             
- CS ?[  #col 1- # lda  ]?                
- linptr adc pha linptr 1 + lda  0 # adc  
+ (65n \ C) CS ?[  #col 1- # lda  ]?      
+ linptr adc pha linptr 1 + lda           
+ 0 # (65n drop scradr mem C) adc         
  Push jmp  end-code                      
                                          
 | Code curadr  ( -- adr)                 
  clc curofs lda linptr adc  pha          
- linptr 1 + lda 0 # adc Push jmp         
- end-code                                
+ linptr 1 + lda                          
+ 0 #  (65n drop scradr mem C) adc        
+ Push jmp  end-code                      
 (64                                      
 | Code unlinked?     \ -- f              
  $D5 lda  #col # cmp  CC ?[  dex  ]?     
  txa  PushA jmp  end-code C)             
-                                         
-                                         
                                          
                                          
                                          
@@ -11119,7 +11119,7 @@ Editor definitions
 : curlin  ( --curAddr linLen) \ & EOLn   
 (64 linptr @ $D5 c@ -trailing            
    dup $d3 c! C)                         
-(65n linptr @ $EC c@ -trailing C)        
+(65n rowadr $EE c@ -trailing C)          
 (16 $1b con! ascii j con! curaddr        
     $1b con! ascii k con! $1d con!       
      curaddr  over - C) ;                
