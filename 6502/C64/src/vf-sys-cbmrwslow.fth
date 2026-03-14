@@ -50,6 +50,7 @@
 : readsector  ( adr tra# sect# -- flag)
    d disk d " #" count cbmopen
    f disk 2swap f -rot rdcmd cbmopen
+   \ todo: close files on error
    derror? dup ?exit drop
    b/sek d cbminput
    f cbmclose 
@@ -58,10 +59,11 @@
 
 : writesector  ( adr tra# sect# -- flag)
    d disk d " #" count cbmopen
-   f disk f " b-p 13 0" cbmopen
-   derror? dup ?exit drop
+   f disk f " b-p 13 0" count cbmopen
    rot b/sek d cbmtype
    wrcmd f cbmtype
+   \ todo: close files on error
+   derror? dup ?exit drop
    cbmclrchn
    f cbmclose 
    d cbmclose
