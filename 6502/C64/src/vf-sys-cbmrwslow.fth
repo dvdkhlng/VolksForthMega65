@@ -47,9 +47,6 @@
    ELSE BEGIN emit cbmbasin dup D = UNTIL emit true THEN
    swap cbmchkin ;
 
-| Create doclose  0  ] r> cbmclose ;
-: pushclose ( lfn -- )
-   r> swap >r  doclose >r >r  ;
 : readsector  ( adr tra# sect# -- flag)
    d disk d " #" count cbmopen  d pushclose
    f disk 2swap f -rot rdcmd cbmopen  f pushclose

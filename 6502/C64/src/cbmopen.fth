@@ -52,3 +52,8 @@ Code cbmgetio  ( -- in out)
       i/o-status? ?dup IF nip LEAVE THEN
    LOOP pause
    r> cbmchkin ;
+
+\ Like push and pull but for closing files
+| Create doclose  0  ] r> cbmclose ;
+: pushclose ( lfn -- )
+   r> swap >r  doclose >r >r  ;
