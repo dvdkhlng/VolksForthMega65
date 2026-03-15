@@ -10638,7 +10638,7 @@ Label incpointer
                                          
 | : insert  ( -- f)                      
  atlast?  ?dup ?exit                     
-(64  unlinked? C) (16 true C)            
+(64  unlinked? \ C) true                 
  rowadr #col + 1- c@  bl = not  and      
  blank.end? not  and  dup ?exit          
  $94 con! ;                              
