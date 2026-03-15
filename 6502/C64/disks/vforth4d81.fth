@@ -650,28 +650,28 @@ free                 2
                                          
 \ savesystem         23oct87re 03mar26dk 
                                          
-| : (savsys ( adr len -- )               
+| : (savsys ( adr len -- flag )          
  [ Assembler ] Next  [ Forth ]           
  ['] pause  dup push  !  \ singletask    
- ( i/o push  i/o off)  14 cbmtype ;      
+   ( i/o push  i/o off)  14 cbmtype ;    
                                          
 : savesystem   \ name must follow        
-    \ prepare Forth Kernal               
+ \ prepare Forth Kernal                  
  scr push  1 scr !  r# push  r# off      
-    \ prepare Editor                     
-\ [ Editor ]                             
- \ stamp$ dup push off                   
- \ (pad   dup push off                   
-    \ now we save the system             
- save                                    
+ \ prepare Editor                        
+ [ Editor ]                              
+ stamp$ dup push off                     
+ (pad   dup push off                     
+ save   \ now we save the system         
  0 parse dup >r pad swap move            
  " ,p,w" count pad r@ + swap move        
  14 8 14  pad r> 4 + cbmopen             
- origin $17 - dup sp@ 2 14 cbmtype       
+ origin $17 - sp@ 2 14 cbmtype >r        
  here over - (savsys  14 cbmclose        
- 0 (drv ! false abort" save-error" ;     
+ r> or  abort" save-error" ;             
                                          
 Onlyforth                                
+                                         
                                          
 \ bamallocate, formatdisk      20oct87re 
                                          
