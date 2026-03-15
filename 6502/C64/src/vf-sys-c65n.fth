@@ -11,6 +11,7 @@ FF32 >label RESET_RUN
 FF41 >label GETIO
 FF6B >label SETBNK
 CHROUT >label ConOut
+FF47 >label SYSFLAGS
 
 0d020 >label BrdCol
 0d021 >label BkgCol
@@ -147,6 +148,7 @@ ink-pot 1+ lda BkgCol sta \ backgrnd
  \ d8 # lda  d069 sta  
 \ 00 # lda  d068 sta
 27 # lda  D018 sta  \ low/upp +
+20 # lda  clc  SYSFLAGS jsr \ function keys
 \ no: is disabled by any DOS operation.
 \ D030 lda  1 # ora  D030 sta    \ enable CRAM2k
  cli rts end-code
