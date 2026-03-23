@@ -10925,22 +10925,22 @@ Editor definitions
                                          
 \ Edi keytable                cas16aug06 
 | : Ctrl  ( -- 8b)                       
- [compile] Ascii $40 - ; immediate       
+   [compile] Ascii $40 - ; immediate     
+(64 00 C) (16 $1e C) (65n $5f C)         
+| Constant copychar#                     
 | Create keytable                        
 Ctrl n c, Ctrl b c, Ctrl w c, Ctrl a c,  
 $1F c, Ctrl ^       (16 drop $92 C) c,   
 $0D c,   $8D c,                          
 Ctrl c c, Ctrl x c, Ctrl f c, Ctrl l c,  
 $85 c,   $89 c,    $86 c,    $8A c,      
-$9F c,   $1C c,   00 (16 drop $1e C) c,  
+$9F c,   $1C c,        copychar# c,      
 $8B c,   $87 c,    $88 c,    $8C c,      
 $1D c,   $11 c,    $9D c,    $91 c,      
 $13 c,   $93 c,    $94 c,                
 $14 c,    Ctrl d c, Ctrl e c, Ctrl r c,  
 Ctrl i c, Ctrl o c,                      
                              $ff c,      
-                                         
-                                         
                                          
                                          
                                          
