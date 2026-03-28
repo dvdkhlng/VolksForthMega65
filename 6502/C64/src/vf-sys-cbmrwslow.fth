@@ -6,6 +6,8 @@
 \ *** Block No. 140, Hexblock 8c
 8c fthpage
 
+Variable i/o  0 i/o !  \ Semaphore
+
 ( s#>s+t  x,x                 28may85re)
 
 165 | Constant 1.t
@@ -77,13 +79,14 @@
  swap Abort" no file"
  -rot  blk/drv /mod  dup (drv ! 3 u>
  IF . ." beyond capacity" nip exit  THEN
- \ diskopen  IF  drop nip exit  THEN
+ i/o lock
  0 swap   2* 2* 4 bounds
  DO  drop  2dup I rot
      IF    s#>t+s readsector
      ELSE  s#>t+s writesector THEN
      >r b/sek + r> dup  IF  LEAVE  THEN
- LOOP   -rot  2drop  ( diskclose)  ;
+ LOOP   -rot  2drop
+ i/o unlock ;
 
 ' 1541r/w  Is   r/w
 
