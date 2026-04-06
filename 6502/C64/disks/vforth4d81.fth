@@ -10016,8 +10016,8 @@ Multi-Tasker       &57
 EpsonRX80          &63                   
 VC1526             &75                   
 CP-80              &78                   
-                                         
-                                         
+Slide Editor       &98                   
+Mega65 Tools      &102                   
                                          
                                          
                                          
@@ -10044,8 +10044,8 @@ Printer: CP-80      78
                                          
 Shadows             85 ...               
                                          
-                                         
-                                         
+Slide Editor        98                   
+Mega65 Tools       102                   
                                          
                                          
 \ rom ram sys                 cas16aug06 
@@ -12548,6 +12548,14 @@ Onlyforth
                                          
                                          
                                          
+\ Mega65 Tools Load Screen     dk06aug26 
+                                         
+\ Load Screen                            
+Onlyforth                                
+\needs .blk       -56 +load \ .blk       
+\needs Code       -98 +load \ Assembler  
+                                         
+1 2 +thru                                
                                          
                                          
                                          
@@ -12565,6 +12573,22 @@ Onlyforth
                                          
                                          
                                          
+\ Mega65 Flat Memory Access   dk06aug26  
+\ See Mega65 Book: "Flat-Memory Access"  
+                                         
+Code c@f   ( bank adr -- 8b )            
+ 2 # lda Setup jsr   0 # ldz  \ hmm?     
+ nop   N )Z lda                          
+ Push0A jmp                              
+end-code                                 
+                                         
+Code @f   ( bank adr -- 16b )            
+ 2 # lda Setup jsr  0 # ldz              
+ SP 2dec                                 
+ nop  N )Z lda  tax                      
+ inz  nop  N )Z lda  SP )Y sta           
+ txa  0 # ldx  Puta jmp                  
+end-code                                 
                                          
                                          
                                          
@@ -12573,6 +12597,23 @@ Onlyforth
                                          
                                          
                                          
+                                         
+\ Mega65 Flat Memory Access   dk06aug26  
+                                         
+Code c!f  ( 8b bank adr -- )             
+ 3 # lda Setup jsr   0 # ldz             
+ N 4+ lda                                
+ nop  N )Z sta                           
+ Next jmp                                
+end-code                                 
+                                         
+Code !f  ( 16b bank adr -- )             
+ 3 # lda Setup jsr    0 # ldz            
+ N 4+ lda                                
+ nop  N )Z sta  inz                      
+ N 5 + lda  nop  N )Z sta                
+ Next jmp                                
+end-code                                 
                                          
                                          
                                          
@@ -19285,47 +19326,6 @@ Onlyforth Graphic also definitions
  blk gr2 sprcolors                       
  dup $40 $128 yel 7 setsprite            
  7 3colored set  7 high  slist ;         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
                                          
                                          
                                          
