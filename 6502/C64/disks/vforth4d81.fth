@@ -653,7 +653,7 @@ free                 2
 | : (savsys ( adr len -- flag )          
  [ Assembler ] Next  [ Forth ]           
  ['] pause  dup push  !  \ singletask    
-   ( i/o push  i/o off)  14 cbmtype ;    
+   i/o push  i/o off  14 cbmtype ;       
                                          
 : savesystem   \ name must follow        
  \ prepare Forth Kernal                  
@@ -12448,10 +12448,45 @@ eats up valuable memory.
                                          
                                          
                                          
-\ free                        cas16aug06 
+\ presentation slides        dk06apr26   
+: mem=  ( adr1 adr2 count -- flag )      
+ 0 ?do  2dup I + c@  swap I + c@ - if    
+   2drop false unloop exit then          
+ loop  2drop true ;                      
+                                         
+1000 constant c/screen                   
+: scrst  (64 $288 C)  (16 $53e C)        
+ (65n $d061 C) c@ 256 * ;                
+$d800 (16 drop $800 C) Constant coladr   
+                                         
+: ?update  ( adr2 blk -- )               
+ 2dup block  c/screen mem= if            
+   2drop exit                            
+ then                                    
+ block c/screen move  update ;           
+: sload  ( blk -- )  scr !  (65n 40col C)
+ scr @ block  scrst  c/screen move       
+ scr @ 1+ block coladr c/screen move ;   
                                          
                                          
                                          
+                                         
+                                         
+-->                                      
+\ presentation slides        dk06apr26   
+: sedit  ( blk -- )                      
+ sload  pad 50 expect                    
+ scrst  scr @  ?update                   
+ coladr scr @ 1+  ?update                
+ page ." updated " scr @ dup . 1+ . ;    
+                                         
+: sclear  ( blk -- )  scr !              
+ scr @ block 1024 bl fill update         
+ scr @ 1+ block 1024 1 fill update ;     
+                                         
+: sshow  ( blk -- )                      
+ begin  dup page cr . dup sload   0 0 at 
+  key bl =  while  2 + repeat drop page ;
                                          
                                          
                                          
@@ -19220,41 +19255,6 @@ Onlyforth Graphic also definitions
  blk gr2 sprcolors                       
  dup $40 $128 yel 7 setsprite            
  7 3colored set  7 high  slist ;         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
                                          
                                          
                                          
