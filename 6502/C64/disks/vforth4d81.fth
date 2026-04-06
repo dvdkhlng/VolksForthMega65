@@ -12473,20 +12473,50 @@ $d800 (16 drop $800 C) Constant coladr
                                          
                                          
 -->                                      
-\ presentation slides        dk06apr26   
+\ slide editor            dk06apr26      
+variable sedist  sedist off              
+only Forth Editor also Forth             
+: sedidecode  ( adr cnt1 key -- adr cnt2)
+ sedist c@ 2 = if  10 + then             
+ sedist c@ if  con!  sedist off exit then
+ 22 case? if ( F11) 1 sedist c! exit then
+ 23 case? if ( F12) 2 sedist c! exit then
+ edidecode ;                             
+Input: sediboard                         
+c64key c64key? sedidecode ediexpect ;    
+Onlyforth                                
 : sedit  ( blk -- )                      
+ sediboard                               
  sload  pad 50 expect                    
  scrst  scr @  ?update                   
  coladr scr @ 1+  ?update                
- page ." updated " scr @ dup . 1+ . ;    
+ page ." updated " scr @ dup . 1+ .      
+ ediboard ;                              
                                          
+                                         
+                                         
+                                         
+                                         
+-->                                      
+\ slide tools                  dk06apr26 
 : sclear  ( blk -- )  scr !              
  scr @ block 1024 bl fill update         
  scr @ 1+ block 1024 1 fill update ;     
                                          
 : sshow  ( blk -- )                      
  begin  dup page cr . dup sload   0 0 at 
-  key bl =  while  2 + repeat drop page ;
+  key bl =  while  2 + repeat            
+ drop page ;                             
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
                                          
                                          
                                          
@@ -19255,36 +19285,6 @@ Onlyforth Graphic also definitions
  blk gr2 sprcolors                       
  dup $40 $128 yel 7 setsprite            
  7 3colored set  7 high  slist ;         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
                                          
                                          
                                          
