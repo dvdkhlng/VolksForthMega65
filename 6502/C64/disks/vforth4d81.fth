@@ -12598,26 +12598,26 @@ Code !f  ( 16b bank adr -- )
  Next jmp                                
 end-code                                 
                                          
-\ 65ce02 optimized bit-shift   dk06aug26 
+\ 6502 optimized bit-shift   dk06aug26   
 Code lshift ( x1 b8 -- x2)               
- 2 # ldz  SP )Z lda  N sta               
+ iny  SP )Y lda  N sta                   
  SP X)  lda  0<> ?[                      
-   tax inz                               
-   SP )Z lda                             
+   tax iny                               
+   SP )Y lda                             
    [[ N asl  .a rol   dex 0= ?]          
-   SP )Z sta                             
- ]?                                      
+   SP )Y sta  dey                        
+ ]?  dey                                 
  SP 2inc  N lda  Puta jmp                
 end-code                                 
                                          
 Code rshift ( x1 0..15 -- x2)            
- 2 # ldz  SP )Z lda  N sta               
+ iny  SP )Y lda  N sta                   
  SP X)  lda  0<> ?[                      
-   tax inz                               
-   SP )Z lda                             
+   tax iny                               
+   SP )Y lda                             
    [[ .a lsr  N ror   dex 0= ?]          
-   SP )Z sta                             
- ]?                                      
+   SP )Y sta   dey                       
+ ]?  dey                                 
  SP 2inc  N lda  Puta jmp                
 end-code                                 
                                          
@@ -12703,6 +12703,7 @@ $3fff Constant FINF $Bfff Constant -FINF
 $4000 Constant F0.0 $C000 Constant -F0.0 
 $8000 Constant -F1.0 $0000 Constant F1.0 
 3402 Constant F10.0                      
+10205 Constant F1000.0                   
                                          
 \ min,max possible exponent              
 $3FFF Constant maxexp                    
@@ -12714,7 +12715,6 @@ $3FFF Constant maxexp
 ' @ Alias F@        ' ! Alias F!         
 ' Constant Alias FConstant               
 ' Variable Alias FVariable               
-                                         
                                          
                                          
                                          
@@ -13201,7 +13201,6 @@ FDED , FE45 , FE9E , FEF6 , FF4F , FFA7
 \ Logarithmic fl. add,sub,exp  dk07apr26 
 $3FFF Constant 2^14-1                    
 $3800 Constant F2^14-1                   
-                                         
 : F1+  ( r -- r+1 )  F2^14-1 F*  F>S     
  2^14-1 + S>F  F2^14-1 F/ ;              
 : f+   ( r1 r2 -- r3 )                   
@@ -13213,6 +13212,7 @@ $3800 Constant F2^14-1
 \ octave: log2(log2(e)*2^10)*2^10        
 10781 FConstant log2(e)*2^10             
 12014 FConstant log2(10)*2^10            
+10240 FConstant log2(2)*2^10             
                                          
 \ This is used to convert our exponents  
 \ to the base-10, base-e logarithms      
@@ -13234,21 +13234,25 @@ $B800 Constant fminexp
  F>S  0 fcombine ;                       
 : FEXP  ( r -- e^r )                     
  log2(e)*2^10 F*  F>EXP ;                
-: F10^  ( r -- e^r )                     
+: F10^  ( r -- 10^r )                    
  log2(10)*2^10 F*  F>EXP ;               
+: F2^  ( r -- 2^r )                      
+ log2(2)*2^10 F*  F>EXP ;                
 : *F10^  ( r1 r2 -- r1*10^r2 )           
  \ allows to e.g. compute 0.001 * 10^6.  
  \ even though 6.E f10^ is not supported 
  \ as a float!  No overflow checks!      
  log2(10)*2^10 F*  F>S                   
- SWAP fsplit >R +                        
- R> fcombine ;                           
+ SWAP fsplit >R + R> fcombine ;          
+: *F2^  ( r1 r2 -- r1*2^r )              
+ log2(2)*2^10 F*  F>S                    
+ SWAP fsplit >R + R> fcombine ;          
+                                         
+\ Logarithmic float FLOG etc. dk07apr26  
 : F**  ( r1 r2 -- r1^r2 )                
  FSWAP  \ negative r1 not supported!     
  fsplit IF  2drop FINF EXIT THEN         
  S>F F* F>EXP ;                          
-                                         
-\ Logarithmic float FLOG etc. dk07apr26  
 : (FLOG)  ( r -- r false | -finf true )  
  \ sign-extend and bound exponent        
  DUP F0< >R                              
@@ -13269,38 +13273,32 @@ $B800 Constant fminexp
                                          
                                          
                                          
-                                         
-                                         
-                                         
-                                         
 \ Logarithmic float output  dk07apr26    
 Variable #10exp                          
 : f.  ( r -- )                           
  SPACE                                   
  dup f0< IF  ." -" fnegate THEN          
  dup f0= IF  drop ." 0." EXIT THEN       
- FDUP FLOG F>S  DUP 0< IF 1- THEN        
- 3 - #10exp !                            
- #10exp @ NEGATE 1+ S>F                  
- *F10^   f>d                             
- \ rounded truncation of last 6 digits   
- 5. D+  10 ud/mod  rot drop              
- -1 -ROT                                 
- 4 0 DO \ digits on stack, highest last  
+ 0 #10exp !                              
+ begin  fdup F1000.0 F< while            
+   F10.0 f*  -1 #10exp +!                
+ repeat                                  
+ f>d  -1 -ROT                            
+ 5 0 DO \ digits on stack, highest last  
   10 ud/mod                              
   2DUP D0= IF I #10exp +! LEAVE          
   THEN                                   
  LOOP                                    
  2DROP                                   
- ascii 0 + EMIT  ." ."  \ first digit    
+ ASCII 0 + EMIT  ." ."  \ first digit    
  BEGIN DUP 0< 0= WHILE   \ more digits   
-   ascii 0 + EMIT                        
+   ASCII 0 + EMIT                        
  REPEAT   DROP                           
  ." *10^" #10exp @ 0 .R ;                
                                          
                                          
                                          
-                                         
+\ empty                                  
                                          
                                          
                                          
@@ -19857,6 +19855,8 @@ Onlyforth Graphic also definitions
  blk gr2 sprcolors                       
  dup $40 $128 yel 7 setsprite            
  7 3colored set  7 high  slist ;         
+                                         
+                                         
                                          
                                          
                                          
