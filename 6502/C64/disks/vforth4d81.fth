@@ -12449,6 +12449,7 @@ eats up valuable memory.
                                          
                                          
 \ presentation slides        dk06apr26   
+\needs edit       -79 +load \ editor     
 : mem=  ( adr1 adr2 count -- flag )      
  0 ?do  2dup I + c@  swap I + c@ - if    
    2drop false unloop exit then          
@@ -12471,7 +12472,6 @@ $d800 (16 drop $800 C) Constant coladr
                                          
                                          
                                          
-                                         
 -->                                      
 \ slide editor            dk06apr26      
 variable sedist  sedist off              
@@ -12481,10 +12481,12 @@ only Forth Editor also Forth
  sedist c@ if  con!  sedist off exit then
  22 case? if ( F11) 1 sedist c! exit then
  23 case? if ( F12) 2 sedist c! exit then
- edidecode ;                             
+ dup >r  at? 39 = r@ 29 = and            
+ swap 24 =  r@ 17 = and  or              
+ r> 145 = 0=  at? 24 39 d= and or  if    
+  drop exit then  edidecode ;            
 Input: sediboard                         
 c64key c64key? sedidecode ediexpect ;    
-Onlyforth                                
 : sedit  ( blk -- )                      
  sediboard                               
  sload  pad 50 expect                    
@@ -12492,9 +12494,7 @@ Onlyforth
  coladr scr @ 1+  ?update                
  page ." updated " scr @ dup . 1+ .      
  ediboard ;                              
-                                         
-                                         
-                                         
+Onlyforth                                
                                          
                                          
 -->                                      
@@ -12555,8 +12555,8 @@ Onlyforth
 \needs .blk       -56 +load \ .blk       
 \needs Code       -98 +load \ Assembler  
                                          
-1 2 +thru                                
-                                         
+1 2 +thru    \ machine code              
+6 29 +thru   \ log-floats                
                                          
                                          
                                          
@@ -12575,47 +12575,51 @@ Onlyforth
                                          
 \ Mega65 Flat Memory Access   dk06aug26  
 \ See Mega65 Book: "Flat-Memory Access"  
-                                         
 Code c@f   ( bank adr -- 8b )            
  2 # lda Setup jsr   0 # ldz  \ hmm?     
- nop   N )Z lda                          
- Push0A jmp                              
+   nop   N )Z lda  Push0A jmp            
 end-code                                 
-                                         
 Code @f   ( bank adr -- 16b )            
- 2 # lda Setup jsr  0 # ldz              
- SP 2dec                                 
+ 2 # lda Setup jsr  SP 2dec  0 # ldz     
  nop  N )Z lda  tax                      
  inz  nop  N )Z lda  SP )Y sta           
  txa  0 # ldx  Puta jmp                  
 end-code                                 
                                          
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-\ Mega65 Flat Memory Access   dk06aug26  
-                                         
 Code c!f  ( 8b bank adr -- )             
  3 # lda Setup jsr   0 # ldz             
- N 4+ lda                                
- nop  N )Z sta                           
+ N 4+ lda  nop  N )Z sta                 
  Next jmp                                
 end-code                                 
-                                         
 Code !f  ( 16b bank adr -- )             
  3 # lda Setup jsr    0 # ldz            
- N 4+ lda                                
- nop  N )Z sta  inz                      
+ N 4+ lda  nop  N )Z sta  inz            
  N 5 + lda  nop  N )Z sta                
  Next jmp                                
 end-code                                 
                                          
+\ 65ce02 optimized bit-shift   dk06aug26 
+Code lshift ( x1 b8 -- x2)               
+ 2 # ldz  SP )Z lda  N sta               
+ SP X)  lda  0<> ?[                      
+   tax inz                               
+   SP )Z lda                             
+   [[ N asl  .a rol   dex 0= ?]          
+   SP )Z sta                             
+ ]?                                      
+ SP 2inc  N lda  Puta jmp                
+end-code                                 
                                          
+Code rshift ( x1 0..15 -- x2)            
+ 2 # ldz  SP )Z lda  N sta               
+ SP X)  lda  0<> ?[                      
+   tax inz                               
+   SP )Z lda                             
+   [[ .a lsr  N ror   dex 0= ?]          
+   SP )Z sta                             
+ ]?                                      
+ SP 2inc  N lda  Puta jmp                
+end-code                                 
                                          
                                          
                                          
@@ -12694,78 +12698,605 @@ end-code
                                          
                                          
                                          
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
+\ Logarithmic floating point  dk07apr26  
+$3fff Constant FINF $Bfff Constant -FINF 
+$4000 Constant F0.0 $C000 Constant -F0.0 
+$8000 Constant -F1.0 $0000 Constant F1.0 
+3402 Constant F10.0                      
+                                         
+\ min,max possible exponent              
+$3FFF Constant maxexp                    
+-$4000 Constant minexp                   
+                                         
+' over Alias FOVER  ' swap Alias FSWAP   
+' rot Alias FROT    ' dup Alias FDUP     
+' drop Alias FDROP  ' nip Alias FNIP     
+' @ Alias F@        ' ! Alias F!         
+' Constant Alias FConstant               
+' Variable Alias FVariable               
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+\ Logarithmic floating point  dk07apr26  
+                                         
+: fsplit  ( r -- d-exponent x-sign )     
+ DUP $8000 AND      \ extract sign       
+ SWAP $7FFF AND     \ clear sign         
+ $4000 XOR    $4000 -  SWAP ; \ sign ext 
+: fcombine  ( d-exponent x-sign -- r )   
+   SWAP $7FFF AND OR ;                   
+: fnegate   $8000 XOR ;                  
+: F0<  $8000 AND 0<> ; \ ?               
+: FABS  $7FFF AND ;                      
+: F0=  $7FFF AND F0.0 = ;                
+                                         
+: does>array@   does> swap 2* + @ ;      
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+\ Logarithm Table p1/7   dk07apr26       
+HEX Create logtbl does>array@ 0 , 1 , 3  
+, 4 , 6 , 7 , 9 , 0A , 0B , 0D , 0E , 10 
+, 11 , 13 , 14 , 15 , 17 , 18 , 1A , 1B  
+, 1D , 1E , 1F , 21 , 22 , 24 , 25 , 26  
+, 28 , 29 , 2B , 2C , 2D , 2F , 30 , 32  
+, 33 , 34 , 36 , 37 , 39 , 3A , 3B , 3D  
+, 3E , 40 , 41 , 42 , 44 , 45 , 46 , 48  
+, 49 , 4B , 4C , 4D , 4F , 50 , 51 , 53  
+, 54 , 55 , 57 , 58 , 5A , 5B , 5C , 5E  
+, 5F , 60 , 62 , 63 , 64 , 66 , 67 , 68  
+, 6A , 6B , 6C , 6E , 6F , 70 , 72 , 73  
+, 74 , 76 , 77 , 78 , 7A , 7B , 7C , 7E  
+, 7F , 80 , 82 , 83 , 84 , 86 , 87 , 88  
+, 8A , 8B , 8C , 8E , 8F , 90 , 92 , 93  
+, 94 , 95 , 97 , 98 , 99 , 9B , 9C , 9D  
+, 9F , A0 , A1 , A2 , A4 , A5 , A6 , A8  
+, A9 , AA , AB , AD , AE , AF , B1 , B2  
+, B3 , B4 , B6 , B7 , B8 , B9 , BB , BC  
+, BD , BF , C0 , C1 , C2 , C4 , C5 , C6  
+, C7 , C9 , CA , CB , CC , CE , CF , D0  
+, D1 , D3 , D4 , D5 , D6 , D8 , D9 , DA  
+, DB , DD , DE , DF , E0 , E2 , E3 , E4  
+, E5 , E7 , E8 , E9 , EA , EC , ED , EE  
+, EF , F0 , F2 , F3 , F4 , F5 , F7 , F8  
+\ Logarithm Table p2/7   dk07apr26       
+, F9 , FA , FB , FD , FE , FF , 100 ,    
+102 , 103 , 104 , 105 , 106 , 108 , 109  
+, 10A , 10B , 10C , 10E , 10F , 110 ,    
+111 , 112 , 114 , 115 , 116 , 117 , 118  
+, 11A , 11B , 11C , 11D , 11E , 120 ,    
+121 , 122 , 123 , 124 , 125 , 127 , 128  
+, 129 , 12A , 12B , 12D , 12E , 12F ,    
+130 , 131 , 132 , 134 , 135 , 136 , 137  
+, 138 , 139 , 13B , 13C , 13D , 13E ,    
+13F , 140 , 142 , 143 , 144 , 145 , 146  
+, 147 , 148 , 14A , 14B , 14C , 14D ,    
+14E , 14F , 151 , 152 , 153 , 154 , 155  
+, 156 , 157 , 159 , 15A , 15B , 15C ,    
+15D , 15E , 15F , 161 , 162 , 163 , 164  
+, 165 , 166 , 167 , 168 , 16A , 16B ,    
+16C , 16D , 16E , 16F , 170 , 172 , 173  
+, 174 , 175 , 176 , 177 , 178 , 179 ,    
+17A , 17C , 17D , 17E , 17F , 180 , 181  
+, 182 , 183 , 184 , 186 , 187 , 188 ,    
+189 , 18A , 18B , 18C , 18D , 18E , 190  
+, 191 , 192 , 193 , 194 , 195 , 196 ,    
+197 , 198 , 199 , 19B , 19C , 19D , 19E  
+, 19F , 1A0 , 1A1 , 1A2 , 1A3 , 1A4 ,    
+1A5 , 1A6 , 1A8 , 1A9 , 1AA , 1AB , 1AC  
+\ Logarithm Table p3/7   dk07apr26       
+, 1AD , 1AE , 1AF , 1B0 , 1B1 , 1B2 ,    
+1B3 , 1B4 , 1B6 , 1B7 , 1B8 , 1B9 , 1BA  
+, 1BB , 1BC , 1BD , 1BE , 1BF , 1C0 ,    
+1C1 , 1C2 , 1C3 , 1C5 , 1C6 , 1C7 , 1C8  
+, 1C9 , 1CA , 1CB , 1CC , 1CD , 1CE ,    
+1CF , 1D0 , 1D1 , 1D2 , 1D3 , 1D4 , 1D5  
+, 1D6 , 1D8 , 1D9 , 1DA , 1DB , 1DC ,    
+1DD , 1DE , 1DF , 1E0 , 1E1 , 1E2 , 1E3  
+, 1E4 , 1E5 , 1E6 , 1E7 , 1E8 , 1E9 ,    
+1EA , 1EB , 1EC , 1ED , 1EE , 1EF , 1F0  
+, 1F1 , 1F3 , 1F4 , 1F5 , 1F6 , 1F7 ,    
+1F8 , 1F9 , 1FA , 1FB , 1FC , 1FD , 1FE  
+, 1FF , 200 , 201 , 202 , 203 , 204 ,    
+205 , 206 , 207 , 208 , 209 , 20A , 20B  
+, 20C , 20D , 20E , 20F , 210 , 211 ,    
+212 , 213 , 214 , 215 , 216 , 217 , 218  
+, 219 , 21A , 21B , 21C , 21D , 21E ,    
+21F , 220 , 221 , 222 , 223 , 224 , 225  
+, 226 , 227 , 228 , 229 , 22A , 22B ,    
+22C , 22D , 22E , 22F , 230 , 231 , 232  
+, 233 , 234 , 235 , 236 , 237 , 238 ,    
+239 , 23A , 23B , 23C , 23D , 23E , 23F  
+, 240 , 241 , 242 , 243 , 244 , 245 ,    
+246 , 247 , 248 , 249 , 249 , 24A , 24B  
+\ Logarithm Table p4/7   dk07apr26       
+, 24C , 24D , 24E , 24F , 250 , 251 ,    
+252 , 253 , 254 , 255 , 256 , 257 , 258  
+, 259 , 25A , 25B , 25C , 25D , 25E ,    
+25F , 260 , 261 , 262 , 262 , 263 , 264  
+, 265 , 266 , 267 , 268 , 269 , 26A ,    
+26B , 26C , 26D , 26E , 26F , 270 , 271  
+, 272 , 273 , 274 , 275 , 275 , 276 ,    
+277 , 278 , 279 , 27A , 27B , 27C , 27D  
+, 27E , 27F , 280 , 281 , 282 , 283 ,    
+284 , 284 , 285 , 286 , 287 , 288 , 289  
+, 28A , 28B , 28C , 28D , 28E , 28F ,    
+290 , 291 , 291 , 292 , 293 , 294 , 295  
+, 296 , 297 , 298 , 299 , 29A , 29B ,    
+29C , 29D , 29D , 29E , 29F , 2A0 , 2A1  
+, 2A2 , 2A3 , 2A4 , 2A5 , 2A6 , 2A7 ,    
+2A7 , 2A8 , 2A9 , 2AA , 2AB , 2AC , 2AD  
+, 2AE , 2AF , 2B0 , 2B1 , 2B1 , 2B2 ,    
+2B3 , 2B4 , 2B5 , 2B6 , 2B7 , 2B8 , 2B9  
+, 2BA , 2BA , 2BB , 2BC , 2BD , 2BE ,    
+2BF , 2C0 , 2C1 , 2C2 , 2C3 , 2C3 , 2C4  
+, 2C5 , 2C6 , 2C7 , 2C8 , 2C9 , 2CA ,    
+2CB , 2CB , 2CC , 2CD , 2CE , 2CF , 2D0  
+, 2D1 , 2D2 , 2D3 , 2D3 , 2D4 , 2D5 ,    
+2D6 , 2D7 , 2D8 , 2D9 , 2DA , 2DB , 2DB  
+\ Logarithm Table p5/7  dk07apr26        
+, 2DC , 2DD , 2DE , 2DF , 2E0 , 2E1 ,    
+2E2 , 2E2 , 2E3 , 2E4 , 2E5 , 2E6 , 2E7  
+, 2E8 , 2E9 , 2E9 , 2EA , 2EB , 2EC ,    
+2ED , 2EE , 2EF , 2EF , 2F0 , 2F1 , 2F2  
+, 2F3 , 2F4 , 2F5 , 2F6 , 2F6 , 2F7 ,    
+2F8 , 2F9 , 2FA , 2FB , 2FC , 2FC , 2FD  
+, 2FE , 2FF , 300 , 301 , 302 , 302 ,    
+303 , 304 , 305 , 306 , 307 , 308 , 308  
+, 309 , 30A , 30B , 30C , 30D , 30E ,    
+30E , 30F , 310 , 311 , 312 , 313 , 313  
+, 314 , 315 , 316 , 317 , 318 , 319 ,    
+319 , 31A , 31B , 31C , 31D , 31E , 31E  
+, 31F , 320 , 321 , 322 , 323 , 323 ,    
+324 , 325 , 326 , 327 , 328 , 328 , 329  
+, 32A , 32B , 32C , 32D , 32D , 32E ,    
+32F , 330 , 331 , 332 , 332 , 333 , 334  
+, 335 , 336 , 337 , 337 , 338 , 339 ,    
+33A , 33B , 33C , 33C , 33D , 33E , 33F  
+, 340 , 340 , 341 , 342 , 343 , 344 ,    
+345 , 345 , 346 , 347 , 348 , 349 , 349  
+, 34A , 34B , 34C , 34D , 34E , 34E ,    
+34F , 350 , 351 , 352 , 352 , 353 , 354  
+, 355 , 356 , 356 , 357 , 358 , 359 ,    
+35A , 35B , 35B , 35C , 35D , 35E , 35F  
+\ Logarithm Table p6/7  dk07apr26        
+, 35F , 360 , 361 , 362 , 363 , 363 ,    
+364 , 365 , 366 , 367 , 367 , 368 , 369  
+, 36A , 36B , 36B , 36C , 36D , 36E ,    
+36F , 36F , 370 , 371 , 372 , 373 , 373  
+, 374 , 375 , 376 , 377 , 377 , 378 ,    
+379 , 37A , 37A , 37B , 37C , 37D , 37E  
+, 37E , 37F , 380 , 381 , 382 , 382 ,    
+383 , 384 , 385 , 385 , 386 , 387 , 388  
+, 389 , 389 , 38A , 38B , 38C , 38D ,    
+38D , 38E , 38F , 390 , 390 , 391 , 392  
+, 393 , 394 , 394 , 395 , 396 , 397 ,    
+397 , 398 , 399 , 39A , 39A , 39B , 39C  
+, 39D , 39E , 39E , 39F , 3A0 , 3A1 ,    
+3A1 , 3A2 , 3A3 , 3A4 , 3A4 , 3A5 , 3A6  
+, 3A7 , 3A8 , 3A8 , 3A9 , 3AA , 3AB ,    
+3AB , 3AC , 3AD , 3AE , 3AE , 3AF , 3B0  
+, 3B1 , 3B1 , 3B2 , 3B3 , 3B4 , 3B5 ,    
+3B5 , 3B6 , 3B7 , 3B8 , 3B8 , 3B9 , 3BA  
+, 3BB , 3BB , 3BC , 3BD , 3BE , 3BE ,    
+3BF , 3C0 , 3C1 , 3C1 , 3C2 , 3C3 , 3C4  
+, 3C4 , 3C5 , 3C6 , 3C7 , 3C7 , 3C8 ,    
+3C9 , 3CA , 3CA , 3CB , 3CC , 3CD , 3CD  
+, 3CE , 3CF , 3D0 , 3D0 , 3D1 , 3D2 ,    
+3D3 , 3D3 , 3D4 , 3D5 , 3D6 , 3D6 , 3D7  
+\ Logarithm Table p7/7  dk07apr26        
+, 3D8 , 3D9 , 3D9 , 3DA , 3DB , 3DB ,    
+3DC , 3DD , 3DE , 3DE , 3DF , 3E0 , 3E1  
+, 3E1 , 3E2 , 3E3 , 3E4 , 3E4 , 3E5 ,    
+3E6 , 3E7 , 3E7 , 3E8 , 3E9 , 3E9 , 3EA  
+, 3EB , 3EC , 3EC , 3ED , 3EE , 3EF ,    
+3EF , 3F0 , 3F1 , 3F2 , 3F2 , 3F3 , 3F4  
+, 3F4 , 3F5 , 3F6 , 3F7 , 3F7 , 3F8 ,    
+3F9 , 3F9 , 3FA , 3FB , 3FC , 3FC , 3FD  
+, 3FE , 3FF , 3FF ,                      
+                                         
+Create 2** does>array@ 1 , 2 , 4 , 8     
+, 10 , 20 , 40 , 80 , 100 , 200 , 400 ,  
+800 , 1000 , 2000 , 4000 , 8000 ,        
+                                         
+: ufixlog  ( u -- u )   \ log2(u)*1024   
+ &15  SWAP    ( s: logval  u )           
+ 1 8 DO   \ divide by 2^n first          
+  DUP   &16 i -  2**  U< IF              
+   i lshift   SWAP  i -  SWAP            
+  THEN                                   
+ i negate 2/ +LOOP \ i is 8,4,2,1        
+   ( s:  floor{log2} u*2^floor{log2} )   
+ 5 rshift 3FF AND logtbl                 
+ swap &10 lshift   OR ;                  
+\ Exponentation Table p1/  dk07apr26     
+Create exptbl does>array@ 0 , 2C , 59 ,  
+85 , B2 , DE , 10B , 137 , 164 , 190 ,   
+1BD , 1EA , 217 , 243 , 270 , 29D , 2CA  
+, 2F6 , 323 , 350 , 37D , 3AA , 3D7 ,    
+404 , 431 , 45E , 48C , 4B9 , 4E6 , 513  
+, 540 , 56E , 59B , 5C8 , 5F6 , 623 ,    
+651 , 67E , 6AC , 6D9 , 707 , 734 , 762  
+, 790 , 7BD , 7EB , 819 , 847 , 874 ,    
+8A2 , 8D0 , 8FE , 92C , 95A , 988 , 9B6  
+, 9E4 , A12 , A40 , A6E , A9C , ACB ,    
+AF9 , B27 , B56 , B84 , BB2 , BE1 , C0F  
+, C3E , C6C , C9B , CC9 , CF8 , D26 ,    
+D55 , D84 , DB2 , DE1 , E10 , E3F , E6E  
+, E9C , ECB , EFA , F29 , F58 , F87 ,    
+FB6 , FE6 , 1015 , 1044 , 1073 , 10A2 ,  
+10D1 , 1101 , 1130 , 115F , 118F , 11BE  
+, 11EE , 121D , 124D , 127C , 12AC ,     
+12DB , 130B , 133B , 136B , 139A , 13CA  
+, 13FA , 142A , 145A , 1489 , 14B9 ,     
+14E9 , 1519 , 1549 , 1579 , 15AA , 15DA  
+, 160A , 163A , 166A , 169B , 16CB ,     
+16FB , 172C , 175C , 178C , 17BD , 17ED  
+, 181E , 184E , 187F , 18B0 , 18E0 ,     
+1911 , 1942 , 1972 , 19A3 , 19D4 , 1A05  
+\ Exponentation Table p2  dk07apr26      
+, 1A36 , 1A67 , 1A98 , 1AC9 , 1AFA ,     
+1B2B , 1B5C , 1B8D , 1BBE , 1BEF , 1C20  
+, 1C52 , 1C83 , 1CB4 , 1CE6 , 1D17 ,     
+1D48 , 1D7A , 1DAB , 1DDD , 1E0E , 1E40  
+, 1E72 , 1EA3 , 1ED5 , 1F07 , 1F38 ,     
+1F6A , 1F9C , 1FCE , 2000 , 2032 , 2064  
+, 2096 , 20C8 , 20FA , 212C , 215E ,     
+2190 , 21C2 , 21F5 , 2227 , 2259 , 228B  
+, 22BE , 22F0 , 2323 , 2355 , 2388 ,     
+23BA , 23ED , 241F , 2452 , 2485 , 24B7  
+, 24EA , 251D , 2550 , 2583 , 25B5 ,     
+25E8 , 261B , 264E , 2681 , 26B4 , 26E7  
+, 271B , 274E , 2781 , 27B4 , 27E7 ,     
+281B , 284E , 2881 , 28B5 , 28E8 , 291C  
+, 294F , 2983 , 29B6 , 29EA , 2A1E ,     
+2A51 , 2A85 , 2AB9 , 2AEC , 2B20 , 2B54  
+, 2B88 , 2BBC , 2BF0 , 2C24 , 2C58 ,     
+2C8C , 2CC0 , 2CF4 , 2D28 , 2D5D , 2D91  
+, 2DC5 , 2DF9 , 2E2E , 2E62 , 2E97 ,     
+2ECB , 2EFF , 2F34 , 2F69 , 2F9D , 2FD2  
+, 3006 , 303B , 3070 , 30A5 , 30D9 ,     
+310E , 3143 , 3178 , 31AD , 31E2 , 3217  
+, 324C , 3281 , 32B6 , 32EC , 3321 ,     
+3356 , 338B , 33C1 , 33F6 , 342B , 3461  
+\ Exponentation Table p3  dk07apr26      
+, 3496 , 34CC , 3501 , 3537 , 356C ,     
+35A2 , 35D8 , 360D , 3643 , 3679 , 36AF  
+, 36E5 , 371A , 3750 , 3786 , 37BC ,     
+37F2 , 3828 , 385F , 3895 , 38CB , 3901  
+, 3937 , 396E , 39A4 , 39DA , 3A11 ,     
+3A47 , 3A7E , 3AB4 , 3AEB , 3B21 , 3B58  
+, 3B8F , 3BC5 , 3BFC , 3C33 , 3C6A ,     
+3CA1 , 3CD7 , 3D0E , 3D45 , 3D7C , 3DB3  
+, 3DEA , 3E22 , 3E59 , 3E90 , 3EC7 ,     
+3EFE , 3F36 , 3F6D , 3FA4 , 3FDC , 4013  
+, 404B , 4082 , 40BA , 40F1 , 4129 ,     
+4161 , 4198 , 41D0 , 4208 , 4240 , 4278  
+, 42AF , 42E7 , 431F , 4357 , 438F ,     
+43C8 , 4400 , 4438 , 4470 , 44A8 , 44E1  
+, 4519 , 4551 , 458A , 45C2 , 45FA ,     
+4633 , 466C , 46A4 , 46DD , 4715 , 474E  
+, 4787 , 47C0 , 47F8 , 4831 , 486A ,     
+48A3 , 48DC , 4915 , 494E , 4987 , 49C0  
+, 49F9 , 4A33 , 4A6C , 4AA5 , 4ADF ,     
+4B18 , 4B51 , 4B8B , 4BC4 , 4BFE , 4C37  
+, 4C71 , 4CAA , 4CE4 , 4D1E , 4D58 ,     
+4D91 , 4DCB , 4E05 , 4E3F , 4E79 , 4EB3  
+, 4EED , 4F27 , 4F61 , 4F9B , 4FD5 ,     
+5010 , 504A , 5084 , 50BE , 50F9 , 5133  
+\ Exponentation Table p4  dk07apr26      
+, 516E , 51A8 , 51E3 , 521D , 5258 ,     
+5293 , 52CD , 5308 , 5343 , 537E , 53B8  
+, 53F3 , 542E , 5469 , 54A4 , 54DF ,     
+551A , 5555 , 5591 , 55CC , 5607 , 5642  
+, 567E , 56B9 , 56F4 , 5730 , 576B ,     
+57A7 , 57E2 , 581E , 585A , 5895 , 58D1  
+, 590D , 5949 , 5985 , 59C1 , 59FC ,     
+5A38 , 5A74 , 5AB0 , 5AED , 5B29 , 5B65  
+, 5BA1 , 5BDD , 5C1A , 5C56 , 5C92 ,     
+5CCF , 5D0B , 5D48 , 5D84 , 5DC1 , 5DFE  
+, 5E3A , 5E77 , 5EB4 , 5EF0 , 5F2D ,     
+5F6A , 5FA7 , 5FE4 , 6021 , 605E , 609B  
+, 60D8 , 6115 , 6153 , 6190 , 61CD ,     
+620B , 6248 , 6285 , 62C3 , 6300 , 633E  
+, 637B , 63B9 , 63F7 , 6434 , 6472 ,     
+64B0 , 64EE , 652C , 656A , 65A7 , 65E5  
+, 6624 , 6662 , 66A0 , 66DE , 671C ,     
+675A , 6799 , 67D7 , 6815 , 6854 , 6892  
+, 68D1 , 690F , 694E , 698D , 69CB ,     
+6A0A , 6A49 , 6A87 , 6AC6 , 6B05 , 6B44  
+, 6B83 , 6BC2 , 6C01 , 6C40 , 6C7F ,     
+6CBF , 6CFE , 6D3D , 6D7C , 6DBC , 6DFB  
+, 6E3B , 6E7A , 6EBA , 6EF9 , 6F39 ,     
+6F78 , 6FB8 , 6FF8 , 7038 , 7077 , 70B7  
+\ Exponentation Table p5  dk07apr26      
+, 70F7 , 7137 , 7177 , 71B7 , 71F7 ,     
+7238 , 7278 , 72B8 , 72F8 , 7338 , 7379  
+, 73B9 , 73FA , 743A , 747B , 74BB ,     
+74FC , 753C , 757D , 75BE , 75FF , 7640  
+, 7680 , 76C1 , 7702 , 7743 , 7784 ,     
+77C5 , 7807 , 7848 , 7889 , 78CA , 790C  
+, 794D , 798E , 79D0 , 7A11 , 7A53 ,     
+7A94 , 7AD6 , 7B18 , 7B59 , 7B9B , 7BDD  
+, 7C1F , 7C61 , 7CA3 , 7CE5 , 7D27 ,     
+7D69 , 7DAB , 7DED , 7E2F , 7E71 , 7EB4  
+, 7EF6 , 7F38 , 7F7B , 7FBD , 8000 ,     
+8042 , 8085 , 80C8 , 810A , 814D , 8190  
+, 81D3 , 8216 , 8259 , 829C , 82DF ,     
+8322 , 8365 , 83A8 , 83EB , 842E , 8472  
+, 84B5 , 84F8 , 853C , 857F , 85C3 ,     
+8606 , 864A , 868E , 86D1 , 8715 , 8759  
+, 879D , 87E1 , 8824 , 8868 , 88AC ,     
+88F1 , 8935 , 8979 , 89BD , 8A01 , 8A46  
+, 8A8A , 8ACE , 8B13 , 8B57 , 8B9C ,     
+8BE0 , 8C25 , 8C6A , 8CAE , 8CF3 , 8D38  
+, 8D7D , 8DC2 , 8E07 , 8E4C , 8E91 ,     
+8ED6 , 8F1B , 8F60 , 8FA5 , 8FEB , 9030  
+, 9075 , 90BB , 9100 , 9146 , 918B ,     
+91D1 , 9217 , 925C , 92A2 , 92E8 , 932E  
+\ Exponentation Table p6  dk07apr26      
+, 9373 , 93B9 , 93FF , 9445 , 948C ,     
+94D2 , 9518 , 955E , 95A4 , 95EB , 9631  
+, 9677 , 96BE , 9704 , 974B , 9792 ,     
+97D8 , 981F , 9866 , 98AC , 98F3 , 993A  
+, 9981 , 99C8 , 9A0F , 9A56 , 9A9D ,     
+9AE4 , 9B2C , 9B73 , 9BBA , 9C02 , 9C49  
+, 9C91 , 9CD8 , 9D20 , 9D67 , 9DAF ,     
+9DF7 , 9E3E , 9E86 , 9ECE , 9F16 , 9F5E  
+, 9FA6 , 9FEE , A036 , A07E , A0C6 ,     
+A10F , A157 , A19F , A1E8 , A230 , A279  
+, A2C1 , A30A , A352 , A39B , A3E4 ,     
+A42D , A475 , A4BE , A507 , A550 , A599  
+, A5E2 , A62B , A675 , A6BE , A707 ,     
+A751 , A79A , A7E3 , A82D , A876 , A8C0  
+, A90A , A953 , A99D , A9E7 , AA31 ,     
+AA7A , AAC4 , AB0E , AB58 , ABA2 , ABED  
+, AC37 , AC81 , ACCB , AD16 , AD60 ,     
+ADAA , ADF5 , AE3F , AE8A , AED5 , AF1F  
+, AF6A , AFB5 , B000 , B04B , B095 ,     
+B0E0 , B12B , B177 , B1C2 , B20D , B258  
+, B2A3 , B2EF , B33A , B386 , B3D1 ,     
+B41D , B468 , B4B4 , B500 , B54B , B597  
+, B5E3 , B62F , B67B , B6C7 , B713 ,     
+B75F , B7AB , B7F7 , B844 , B890 , B8DC  
+\ Exponentation Table p7  dk07apr26      
+, B929 , B975 , B9C2 , BA0E , BA5B ,     
+BAA8 , BAF4 , BB41 , BB8E , BBDB , BC28  
+, BC75 , BCC2 , BD0F , BD5C , BDA9 ,     
+BDF7 , BE44 , BE91 , BEDF , BF2C , BF7A  
+, BFC7 , C015 , C063 , C0B0 , C0FE ,     
+C14C , C19A , C1E8 , C236 , C284 , C2D2  
+, C320 , C36E , C3BC , C40B , C459 ,     
+C4A7 , C4F6 , C544 , C593 , C5E2 , C630  
+, C67F , C6CE , C71D , C76C , C7BB ,     
+C80A , C859 , C8A8 , C8F7 , C946 , C995  
+, C9E5 , CA34 , CA83 , CAD3 , CB22 ,     
+CB72 , CBC2 , CC11 , CC61 , CCB1 , CD01  
+, CD51 , CDA1 , CDF1 , CE41 , CE91 ,     
+CEE1 , CF31 , CF82 , CFD2 , D022 , D073  
+, D0C3 , D114 , D165 , D1B5 , D206 ,     
+D257 , D2A8 , D2F8 , D349 , D39A , D3EB  
+, D43D , D48E , D4DF , D530 , D582 ,     
+D5D3 , D624 , D676 , D6C7 , D719 , D76B  
+, D7BC , D80E , D860 , D8B2 , D904 ,     
+D956 , D9A8 , D9FA , DA4C , DA9E , DAF1  
+, DB43 , DB95 , DBE8 , DC3A , DC8D ,     
+DCDF , DD32 , DD85 , DDD8 , DE2A , DE7D  
+, DED0 , DF23 , DF76 , DFC9 , E01D ,     
+E070 , E0C3 , E116 , E16A , E1BD , E211  
+\ Exponentation Table p8  dk07apr26      
+, E264 , E2B8 , E30C , E35F , E3B3 ,     
+E407 , E45B , E4AF , E503 , E557 , E5AB  
+, E5FF , E654 , E6A8 , E6FC , E751 ,     
+E7A5 , E7FA , E84E , E8A3 , E8F8 , E94C  
+, E9A1 , E9F6 , EA4B , EAA0 , EAF5 ,     
+EB4A , EB9F , EBF5 , EC4A , EC9F , ECF5  
+, ED4A , ED9F , EDF5 , EE4B , EEA0 ,     
+EEF6 , EF4C , EFA2 , EFF8 , F04E , F0A4  
+, F0FA , F150 , F1A6 , F1FC , F253 ,     
+F2A9 , F300 , F356 , F3AD , F403 , F45A  
+, F4B1 , F507 , F55E , F5B5 , F60C ,     
+F663 , F6BA , F711 , F769 , F7C0 , F817  
+, F86F , F8C6 , F91E , F975 , F9CD ,     
+FA24 , FA7C , FAD4 , FB2C , FB84 , FBDC  
+, FC34 , FC8C , FCE4 , FD3C , FD94 ,     
+FDED , FE45 , FE9E , FEF6 , FF4F , FFA7  
+,   DECIMAL                              
+                                         
+: ufixexp  ( u1 -- u2 ) \ u2=2^(n/1024)  
+ DUP 10 rshift $0f AND >R                
+ $3FF AND exptbl                         
+ 16 R@ - RSHIFT  R> 2** + ;              
+                                         
+                                         
+\ Log. floating point int conv dk07apr26 
+: U>F   ?DUP IF ufixlog ELSE F0.0 THEN ; 
+: D>F   0< IF  NEGATE U>F FNEGATE        
+ ELSE  U>F THEN ;                        
+: S>F   dup 0< D>F ;                     
+: F>D                                    
+ FSPLIT  OVER 0< IF  \ e<0 thus (r < 1)  
+  2DROP 0. EXIT    \ so return 0.        
+ THEN                                    
+ SWAP  ufixexp 0  ROT IF DNEGATE THEN ;  
+: F>S   F>D drop ;                       
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+\ Log. floating point mul, div  dk07apr26
+: f*  ( r1 r2 -- r3 )                    
+   fsplit >R  SWAP fsplit >R             
+   2DUP MAX maxexp = IF  \ x*finf -> finf
+      2DROP maxexp                       
+   ELSE 2DUP MIN minexp = IF  \ x*0 -> 0 
+         2DROP minexp                    
+      ELSE +  minexp MAX  maxexp MIN THEN
+   THEN                                  
+   R> R> XOR    \ handle sign            
+   fcombine ;                            
+: 1/f  ( r1 -- r2 )                      
+   fsplit >R                             
+   DUP minexp = >R   DUP maxexp = R> OR  
+   IF DROP maxexp \  -> INF              
+   ELSE  NEGATE THEN                     
+   R> fcombine ;                         
+: f/   1/f f* ;                          
+: FSQRT   2/ ;                           
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+\ Logarithmic float compare  dk07apr26   
+: FORDER  ( r1 -- u1 ) \ order wrt U< U> 
+   $C000 XOR  \ invert the sign bits     
+   DUP $8000 AND 0= $7FFF AND XOR  ;     
+: FABSORD  ( r1 -- u1 )   \ abs order    
+   $4000 XOR  \ invert the sign bits     
+   $7FFF AND ;  \ get rid of sign bit    
+: F<   FORDER SWAP FORDER U> ;           
+: F>   FORDER SWAP FORDER U< ;           
+: FABS<   FABSORD SWAP FABSORD U> ;      
+: FABS>   FABSORD SWAP FABSORD U< ;      
+: FMAX  2DUP F< IF  SWAP THEN DROP ;     
+: FMIN  2DUP F> IF  SWAP THEN DROP ;     
+: FABSMAX                                
+ 2DUP FABS< IF  SWAP THEN DROP ;         
+: FABSMIN                                
+ 2DUP FABS> IF  SWAP THEN DROP ;         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+\ Logarithmic fl. add,sub,exp  dk07apr26 
+$3FFF Constant 2^14-1                    
+$3800 Constant F2^14-1                   
+                                         
+: F1+  ( r -- r+1 )  F2^14-1 F*  F>S     
+ 2^14-1 + S>F  F2^14-1 F/ ;              
+: f+   ( r1 r2 -- r3 )                   
+ 2DUP FABS<  IF  SWAP THEN               
+ OVER F/ F1+  F* ;                       
+: f-   ( r1 r2 -- r3 )  fnegate F+ ;     
+                                         
+\ Constants for exponentiation           
+\ octave: log2(log2(e)*2^10)*2^10        
+10781 FConstant log2(e)*2^10             
+12014 FConstant log2(10)*2^10            
+                                         
+\ This is used to convert our exponents  
+\ to the base-10, base-e logarithms      
+-12014 0 fcombine   -10781 0 fcombine    
+FConstant 1/(log2(e)*2^10)               
+FConstant 1/(log2(10)*2^10)              
+                                         
+\ +/-2^14-1 as a floating point number   
+$3800 Constant fmaxexp                   
+$B800 Constant fminexp                   
+\ Logarithmic float F** etc. dk07apr26   
+: F>EXP  ( r1 -- r2 )                    
+ \ Basically this just does F>S, but     
+ \ applies some special-case handling to 
+ \ interpret overflowing exponents as 0  
+ \ or INF.                               
+ FDUP fmaxexp F> IF FDROP FINF EXIT THEN 
+ FDUP fminexp F< IF FDROP F0.0 EXIT THEN 
+ F>S  0 fcombine ;                       
+: FEXP  ( r -- e^r )                     
+ log2(e)*2^10 F*  F>EXP ;                
+: F10^  ( r -- e^r )                     
+ log2(10)*2^10 F*  F>EXP ;               
+: *F10^  ( r1 r2 -- r1*10^r2 )           
+ \ allows to e.g. compute 0.001 * 10^6.  
+ \ even though 6.E f10^ is not supported 
+ \ as a float!  No overflow checks!      
+ log2(10)*2^10 F*  F>S                   
+ SWAP fsplit >R +                        
+ R> fcombine ;                           
+: F**  ( r1 r2 -- r1^r2 )                
+ FSWAP  \ negative r1 not supported!     
+ fsplit IF  2drop FINF EXIT THEN         
+ S>F F* F>EXP ;                          
+                                         
+\ Logarithmic float FLOG etc. dk07apr26  
+: (FLOG)  ( r -- r false | -finf true )  
+ \ sign-extend and bound exponent        
+ DUP F0< >R                              
+ DUP F0= R> OR IF                        
+  drop -FINF false EXIT                  
+ THEN                                    
+ fsplit DROP true ;                      
+: FLOG  ( r -- log_10{r} )               
+ (FLOG) IF                               
+  S>F  1/(log2(10)*2^10) F*              
+ THEN ;                                  
+: FLN  ( r -- log_10{r} )                
+ (FLOG) IF                               
+  S>F  1/(log2(e)*2^10) F*               
+ THEN ;                                  
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+                                         
+\ Logarithmic float output  dk07apr26    
+Variable #10exp                          
+: f.  ( r -- )                           
+ SPACE                                   
+ dup f0< IF  ." -" fnegate THEN          
+ dup f0= IF  drop ." 0." EXIT THEN       
+ FDUP FLOG F>S  DUP 0< IF 1- THEN        
+ 3 - #10exp !                            
+ #10exp @ NEGATE 1+ S>F                  
+ *F10^   f>d                             
+ \ rounded truncation of last 6 digits   
+ 5. D+  10 ud/mod  rot drop              
+ -1 -ROT                                 
+ 4 0 DO \ digits on stack, highest last  
+  10 ud/mod                              
+  2DUP D0= IF I #10exp +! LEAVE          
+  THEN                                   
+ LOOP                                    
+ 2DROP                                   
+ ascii 0 + EMIT  ." ."  \ first digit    
+ BEGIN DUP 0< 0= WHILE   \ more digits   
+   ascii 0 + EMIT                        
+ REPEAT   DROP                           
+ ." *10^" #10exp @ 0 .R ;                
                                          
                                          
                                          
@@ -19326,537 +19857,6 @@ Onlyforth Graphic also definitions
  blk gr2 sprcolors                       
  dup $40 $128 yel 7 setsprite            
  7 3colored set  7 high  slist ;         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
-                                         
                                          
                                          
                                          
