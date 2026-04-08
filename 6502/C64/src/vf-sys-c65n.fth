@@ -76,9 +76,14 @@ end-code
 \  \ gdbln lda  pntr ldy  pnt )Y sta
 \  1 # ldy  Next jmp   end-code
 
+\ It's difficult to integrate with the operating system cursor, given
+\ lack of stable API, so we roll our own cursor here $d030 low-bit
+\ controls CRAM2k bit, giving us access to the second kilobyte of
+\ color-RAM to set the blink+underline bit for the cursor.
 : colpnt  d030 dup c@ 1 or swap c!  coladr pnt @ + pntr c@ + ;
 : curon  colpnt dup c@ 90 or swap c! ;
-: curoff  colpnt dup c@ 6F and swap c! ;
+: curoff  colpnt dup c@ 6F and swap c!
+ d030 dup c@ FE and swap c! ;
  
 : c64key  ( -- 8b)
  curon BEGIN pause getkey ?DUP UNTIL
