@@ -187,7 +187,7 @@ nonrelocate                               \     -> blk 4 blk 5 ...... ok \ appr5
 |  8 >exec >allot    | 0A >exec >!
 | 0C >exec >c!                            \     insert Disk TCf
                                           \     savesystem @:vf-tc-3.8
-                                          \     -> ok  If Floppy flashes: Error
+Variable 65ce0  65ce02 off                \     -> ok  If Floppy flashes: Error
                                           \     \ @: is: overwrite if needed
                                           \     \ this file will later replace
                                           \     \ the running Forth System
@@ -290,10 +290,8 @@ dup    2 70 m/c rtn  dup 004 e7 m/c inw
 dup 1414 82 m/c stx  dup 404 00 m/c tsb
 dup  406 d0 m/c cpz     6400 2c m/c jsr
 
-
 | : range?   ( branch -- branch )
  dup abs  07F u> Abort" out of range " ;
-
 : [[  ( BEGIN)  >here ;
 : ?]  ( UNTIL)  >c, >here 1+ -
                 range? >c, ;
@@ -302,10 +300,12 @@ dup  406 d0 m/c cpz     6400 2c m/c jsr
 : ]?  ( THEN)   >here over >c@
                 IF swap >!
  ELSE over 1+ - range? swap >c! THEN ;
-: ][  ( ELSE)   >here 1+   1 jmp
+: ][  ( ELSE)  65ce02 @ if 80 ?[
+ else 1 jmp >here 1+ then
  swap >here over 1+ - range?  swap >c! ;
-: ]]  ( AGAIN)  jmp ;
-: ]]? ( REPEAT) jmp ]? ;
+: ]]  ( AGAIN)
+ 65ce02 @ if 80 ?] exit then  jmp ;
+: ]]? ( REPEAT) ]] ]? ;
 
 \ *** Block No. 11, Hexblock b
 
@@ -322,7 +322,7 @@ D0 Constant 0=    F0 Constant 0<>
 : bne    0=  ?] ;   : bpl   0<  ?] ;
 : bcc    CS  ?] ;   : bvc   VS  ?] ;
 : bcs    CC  ?] ;   : bvs   VC  ?] ;
-
+: bra    80  ?] ;  \ 65ce02
 
 
 
@@ -339,16 +339,16 @@ D0 Constant 0=    F0 Constant 0<>
 
 \ 2/w/inc/dec c16 ram/rom..  cclv2:jul87
 
-: 2inc
- dup lda  clc  2 # adc
+: 2inc  65ce02 @ if dup inw  inw exit
+ then  dup lda  clc  2 # adc
  dup sta  CS ?[  swap 1+ inc  ]?  ;
-: 2dec
- dup lda  sec  2 # sbc
+: 2dec  65ce02 @ if dup dew  dew exit
+ then  dup lda  sec  2 # sbc
  dup sta  CC ?[  swap 1+ dec  ]?  ;
 
-: winc
+: winc  65ce02 @ if  inw exit then
  dup inc  0= ?[  swap 1+ inc  ]?  ;
-: wdec
+: wdec  65ce02 @ if  dew exit then
  dup lda  0= ?[  over 1+ dec  ]?  dec  ;
 
 : ;c:
