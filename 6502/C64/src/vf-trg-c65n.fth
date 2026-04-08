@@ -9,4 +9,6 @@
 : (C16- [compile] ( ; immediate
 : (X16  [compile] ( ; immediate
 
+65ce02 on  \ make 2inc generate inw inw
+
 include vf-pr-target.fth
