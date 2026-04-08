@@ -10104,7 +10104,7 @@ Label long1  ??? jsr  RAM  rts end-code
                                          
 \ internal loading         04may85BP/re) 
                                          
-here   $980 hallot  heap dp !            
+here   $9e0 hallot  heap dp !            
                                          
          1  +load                        
                                          
@@ -10129,14 +10129,14 @@ Onlyforth
                                          
 Onlyforth  Assembler also definitions    
                                          
+\ This flag controls macros 2inc etc.    
+\ and the branches ]] ][                 
+Variable 65ce02 65ce02 (65 on \ C) off   
+                                         
 1 7  +thru                               
  -3  +load \ Makros: rom ram sys         
                                          
 Onlyforth                                
-                                         
-                                         
-                                         
-                                         
                                          
                                          
                                          
@@ -10237,16 +10237,16 @@ decimal
  dup abs  $7F u> Abort" out of range " ; 
                                          
 : [[  ( BEGIN)  here ;                   
-                                         
 : ?]  ( UNTIL)  c, here 1+ - range? c, ; 
 : ?[  ( IF)     c,  here 0 c, ;          
 : ?[[ ( WHILE)  ?[ swap ;                
 : ]?  ( THEN)   here over c@  IF swap !  
  ELSE over 1+ - range? swap c! THEN ;    
-: ][  ( ELSE)   here 1+   1 jmp          
- swap here over 1+ - range?  swap c! ;   
-: ]]  ( AGAIN)  jmp ;                    
-: ]]? ( REPEAT) jmp ]? ;                 
+: ][  ( ELSE)   65ce02 @ if  $80 ?[      
+ else   here 1+   1 jmp then  swap ]? ;  
+: ]]  ( AGAIN)                           
+ 65ce02 @ if $80 ?] exit then  jmp ;     
+: ]]? ( REPEAT) ]] ]? ;                  
                                          
 \ Assembler conditionals       20oct87re 
                                          
@@ -10261,7 +10261,7 @@ $50 Constant VS     $70 Constant VC
 : bne    0=  ?] ;   : bpl   0<  ?] ;     
 : bcc    CS  ?] ;   : bvc   VS  ?] ;     
 : bcs    CC  ?] ;   : bvs   VC  ?] ;     
-                                         
+: bra    $80 ?] ;                        
                                          
                                          
                                          
@@ -10276,23 +10276,23 @@ $50 Constant VS     $70 Constant VC
 \ 2inc/2dec   winc/wdec        20oct87re 
                                          
 : 2inc  ( adr -- )                       
+ 65ce02 @ if dup inw  inw exit then      
  dup lda  clc  2 # adc                   
  dup sta  CS ?[  swap 1+ inc  ]?  ;      
-                                         
 : 2dec  ( adr -- )                       
+ 65ce02 @ if dup dew  dew exit then      
  dup lda  sec  2 # sbc                   
  dup sta  CC ?[  swap 1+ dec  ]?  ;      
                                          
 : winc  ( adr -- )                       
+ 65ce02 @ if  inw exit then              
  dup inc  0= ?[  swap 1+ inc  ]?  ;      
-                                         
 : wdec  ( adr -- )                       
+ 65ce02 @ if  dew exit then              
  dup lda  0= ?[  over 1+ dec  ]?  dec  ; 
                                          
 : ;c:                                    
  recover jsr  end-code ]  0 last !  0 ;  
-                                         
-                                         
                                          
                                          
                                          
