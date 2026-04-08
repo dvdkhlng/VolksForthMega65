@@ -301,11 +301,11 @@ dup  406 d0 m/c cpz     6400 2c m/c jsr
                 IF swap >!
  ELSE over 1+ - range? swap >c! THEN ;
 : ][  ( ELSE)  65ce02 @ if 80 ?[
- else 1 jmp >here 1+ then
- swap >here over 1+ - range?  swap >c! ;
+ else 1 jmp >here 1+ then  swap ]? ;
 : ]]  ( AGAIN)
  65ce02 @ if 80 ?] exit then  jmp ;
 : ]]? ( REPEAT) ]] ]? ;
+
 
 \ *** Block No. 11, Hexblock b
 
